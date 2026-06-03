@@ -1,6 +1,6 @@
 import Darwin
 
-/// 加總所有非 loopback 介面的 if_data 位元組計數。
+/// 加總所有實體(非虛擬)介面的 if_data 位元組計數,排除 loopback 與虛擬/通道介面(VPN、AirDrop、Private Relay 等)。
 public struct InterfaceCountersSource: NetworkCountersSource {
     public init() {}
 
@@ -18,7 +18,10 @@ public struct InterfaceCountersSource: NetworkCountersSource {
             if let a = addr, a.pointee.sa_family == UInt8(AF_LINK),
                let dataPtr = cur.pointee.ifa_data {
                 let name = String(cString: cur.pointee.ifa_name)
-                if !name.hasPrefix("lo") {
+                // 排除 loopback 與虛擬/通道介面(VPN、AirDrop、Private Relay 等),
+                // 只計實體網路吞吐量。
+                let virtualPrefixes = ["lo", "utun", "awdl", "llw", "bridge", "gif", "stf", "ipsec"]
+                if !virtualPrefixes.contains(where: name.hasPrefix) {
                     let data = dataPtr.assumingMemoryBound(to: if_data.self).pointee
                     totalIn += UInt64(data.ifi_ibytes)
                     totalOut += UInt64(data.ifi_obytes)

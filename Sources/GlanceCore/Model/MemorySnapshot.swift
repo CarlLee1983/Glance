@@ -31,3 +31,15 @@ public struct MemorySnapshot: Equatable {
 public protocol MemoryStatsSource {
     func read() -> MemoryStats?
 }
+
+extension MemoryPressure {
+    /// 由已用比例與 swap 推導記憶體壓力(取代不可靠的 kernel pressure level)。
+    /// >90% 已用、或 swap 超過實體記憶體一半 → critical;>75% → warning;否則 normal。
+    public static func evaluate(usedBytes: UInt64, totalBytes: UInt64, swapUsedBytes: UInt64) -> MemoryPressure {
+        guard totalBytes > 0 else { return .normal }
+        let usedFraction = Double(usedBytes) / Double(totalBytes)
+        if usedFraction > 0.90 || swapUsedBytes > totalBytes / 2 { return .critical }
+        if usedFraction > 0.75 { return .warning }
+        return .normal
+    }
+}

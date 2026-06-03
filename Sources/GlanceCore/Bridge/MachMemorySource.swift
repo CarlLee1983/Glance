@@ -15,11 +15,12 @@ public struct MachMemorySource: MemoryStatsSource {
             + UInt64(vm.compressor_page_count)) * pageSize
 
         let swap = Self.swapUsedBytes() ?? 0
-        let pressure: MemoryPressure = Self.pressure()
+        let clampedUsed = min(used, total)
+        let pressure = MemoryPressure.evaluate(usedBytes: clampedUsed, totalBytes: total, swapUsedBytes: swap)
 
         return MemoryStats(
             totalBytes: total,
-            usedBytes: min(used, total),
+            usedBytes: clampedUsed,
             swapUsedBytes: swap,
             pressure: pressure)
     }
@@ -50,17 +51,5 @@ public struct MachMemorySource: MemoryStatsSource {
         return rc == 0 ? usage.xsu_used : nil
     }
 
-    /// 以 vm.memory_pressure 概略判斷;失敗則回 normal。
-    private static func pressure() -> MemoryPressure {
-        var level: Int32 = 0
-        var len = MemoryLayout<Int32>.size
-        guard sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &len, nil, 0) == 0 else {
-            return .normal
-        }
-        switch level {
-        case 4: return .critical
-        case 2: return .warning
-        default: return .normal
-        }
-    }
+
 }
