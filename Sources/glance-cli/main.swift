@@ -1,28 +1,10 @@
 import GlanceCore
 import Foundation
 
-// 為了讓差值指標(CPU/網路/程式)有第二筆,取樣兩次、中間間隔 1 秒。
-let cpu = CPUSampler(source: MachCPUSource())
-let memory = MemorySampler(source: MachMemorySource())
-let network = NetworkSampler(source: InterfaceCountersSource())
-let disk = DiskSampler(source: StatfsDiskSource())
-let battery = BatterySampler(source: IOKitBatterySource())
-let process = ProcessSampler(source: LibprocSource(), limit: 5)
-
-func sampleAll() -> SystemSnapshot {
-    SystemSnapshot(
-        cpu: cpu.sample(),
-        memory: memory.sample(),
-        network: network.sample(),
-        disk: disk.sample(),
-        battery: battery.sample(),
-        topByCPU: process.sampleTopByCPU(),
-        topByMemory: process.sampleTopByMemory())
-}
-
-_ = sampleAll()                 // 第一筆:建立差值基準
+let sampler = SystemSampler()
+_ = sampler.sample()            // 第一筆:建立差值基準
 Thread.sleep(forTimeInterval: 1)
-let s = sampleAll()
+let s = sampler.sample()
 
 func line(_ label: String, _ value: String) {
     print("\(label.padding(toLength: 10, withPad: " ", startingAt: 0)) \(value)")

@@ -21,4 +21,10 @@ final class FormattersTests: XCTestCase {
         XCTAssertEqual(Formatters.rateCompact(3072), "3.0K")
         XCTAssertEqual(Formatters.rateCompact(0), "0")
     }
+
+    func testPercentLooseAllowsOverHundred() {
+        XCTAssertEqual(Formatters.percentLoose(1.5), "150%")
+        XCTAssertEqual(Formatters.percentLoose(0.02), "2%")
+        XCTAssertEqual(Formatters.percentLoose(-0.1), "0%")
+    }
 }

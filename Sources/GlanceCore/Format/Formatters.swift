@@ -8,6 +8,12 @@ public enum Formatters {
         return "\(Int((clamped * 100).rounded()))%"
     }
 
+    /// 0... 分數 → 百分比字串,不上限(供多核程式 CPU% 顯示,可 >100%)。
+    public static func percentLoose(_ fraction: Double) -> String {
+        let v = max(0, fraction)
+        return "\(Int((v * 100).rounded()))%"
+    }
+
     /// 位元組 → "9.8 GB" / "5.0 MB"(1024 基底,一位小數)。
     public static func bytes(_ value: UInt64) -> String {
         let units = ["B", "KB", "MB", "GB", "TB"]

@@ -15,14 +15,14 @@ public final class ProcessSampler {
         self.limit = limit
     }
 
-    public func sampleTopByCPU() -> [ProcessUsage] {
-        guard let raws = source.read() else { return [] }
+    /// 一次列舉,同時回傳 CPU 與記憶體排行,避免重複 read()。
+    public func sample() -> (topCPU: [ProcessUsage], topMemory: [ProcessUsage]) {
+        guard let raws = source.read() else { return ([], []) }
         let t = clock()
         let cpuByPid = Dictionary(uniqueKeysWithValues: raws.map { ($0.pid, $0.cpuTimeSeconds) })
-        defer { previous = (cpuByPid, t) }
-
         let prev = previous
         let dt = prev.map { t - $0.time } ?? 0
+        previous = (cpuByPid, t)
 
         let usages: [ProcessUsage] = raws.map { p in
             let fraction: Double
@@ -33,14 +33,12 @@ public final class ProcessSampler {
             }
             return ProcessUsage(pid: p.pid, name: p.name, cpuFraction: fraction, memoryBytes: p.memoryBytes)
         }
-        return Array(usages.sorted { $0.cpuFraction > $1.cpuFraction }.prefix(limit))
+        let topCPU = Array(usages.sorted { $0.cpuFraction > $1.cpuFraction }.prefix(limit))
+        let topMemory = Array(usages.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(limit))
+        return (topCPU, topMemory)
     }
 
-    public func sampleTopByMemory() -> [ProcessUsage] {
-        guard let raws = source.read() else { return [] }
-        let usages = raws.map {
-            ProcessUsage(pid: $0.pid, name: $0.name, cpuFraction: 0, memoryBytes: $0.memoryBytes)
-        }
-        return Array(usages.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(limit))
-    }
+    public func sampleTopByCPU() -> [ProcessUsage] { sample().topCPU }
+
+    public func sampleTopByMemory() -> [ProcessUsage] { sample().topMemory }
 }

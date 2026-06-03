@@ -29,6 +29,17 @@ CPU        25%
   ...
 ```
 
+## 選單列 App(GlanceApp)
+
+需先安裝 XcodeGen(`brew install xcodegen`),再:
+
+    xcodegen generate          # 由 project.yml 產生 Glance.xcodeproj
+    xcodebuild -project Glance.xcodeproj -scheme Glance -destination 'platform=macOS' build
+
+建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池 區塊(CPU/記憶體含歷史曲線與 Top 程式)。下拉內可開「設定…」調整更新頻率與選單列顯示欄位。
+
+> **MacBook(瀏海機型)注意**:若選單列項目過多,新項目可能被瀏海遮蔽而看不到。可用選單列管理工具(如 Ice:`brew install --cask jordanbaird-ice`)展開隱藏項目,或接外接螢幕檢視。
+
 ## 架構
 
 | 目錄 | 職責 |

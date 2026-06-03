@@ -1,0 +1,29 @@
+name: Glance
+options:
+  bundleIdPrefix: com.carl.glance
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  GlanceCore:
+    path: .
+targets:
+  Glance:
+    type: application
+    platform: macOS
+    sources:
+      - GlanceApp
+    dependencies:
+      - package: GlanceCore
+        product: GlanceCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.carl.glance
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: GlanceApp/Info.plist
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        SWIFT_VERSION: "5.0"
