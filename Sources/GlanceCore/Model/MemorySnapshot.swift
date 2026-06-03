@@ -1,0 +1,33 @@
+public enum MemoryPressure: String, Equatable {
+    case normal, warning, critical
+}
+
+/// 記憶體原始統計(已換算為位元組)。
+public struct MemoryStats: Equatable {
+    public let totalBytes: UInt64
+    public let usedBytes: UInt64
+    public let swapUsedBytes: UInt64
+    public let pressure: MemoryPressure
+    public init(totalBytes: UInt64, usedBytes: UInt64, swapUsedBytes: UInt64, pressure: MemoryPressure) {
+        self.totalBytes = totalBytes; self.usedBytes = usedBytes
+        self.swapUsedBytes = swapUsedBytes; self.pressure = pressure
+    }
+}
+
+public struct MemorySnapshot: Equatable {
+    public let usedBytes: UInt64
+    public let totalBytes: UInt64
+    public let swapUsedBytes: UInt64
+    public let pressure: MemoryPressure
+    public init(usedBytes: UInt64, totalBytes: UInt64, swapUsedBytes: UInt64, pressure: MemoryPressure) {
+        self.usedBytes = usedBytes; self.totalBytes = totalBytes
+        self.swapUsedBytes = swapUsedBytes; self.pressure = pressure
+    }
+    public var usedFraction: Double {
+        totalBytes == 0 ? 0 : Double(usedBytes) / Double(totalBytes)
+    }
+}
+
+public protocol MemoryStatsSource {
+    func read() -> MemoryStats?
+}
