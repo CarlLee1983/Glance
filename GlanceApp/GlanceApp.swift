@@ -1,13 +1,15 @@
 import SwiftUI
+import GlanceCore
 
 @main
 struct GlanceApp: App {
+    @StateObject private var store = MetricsStore(sampler: SystemSampler())
+
     var body: some Scene {
         MenuBarExtra {
-            Text("Glance v0.1")
-                .padding(12)
+            DropdownView(store: store)
         } label: {
-            Text("📊")
+            MenuBarLabel(store: store)
         }
         .menuBarExtraStyle(.window)
     }
