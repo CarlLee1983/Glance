@@ -4,3 +4,4 @@ build/
 .build/
 DerivedData/
 *.xcuserstate
+Glance.xcodeproj/
