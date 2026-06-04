@@ -13,6 +13,10 @@ struct GlanceApp: App {
         }
         .menuBarExtraStyle(.window)
 
+        Window("Disk Space Analyzer", id: "disk-space-analyzer") {
+            DiskSpaceAnalyzerWindow()
+        }
+
         Settings {
             SettingsView()
         }
