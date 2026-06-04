@@ -37,4 +37,14 @@ public enum Formatters {
         if v < 1024 * 1024 { return String(format: "%.1fK", v / 1024) }
         return String(format: "%.1fM", v / (1024 * 1024))
     }
+
+    /// 攝氏溫度 → "52°C"(四捨五入到整數度)。
+    public static func temperature(_ celsius: Double) -> String {
+        "\(Int(celsius.rounded()))°C"
+    }
+
+    /// 瓦數 → "12.4 W"(一位小數,以絕對值顯示)。
+    public static func watts(_ w: Double) -> String {
+        String(format: "%.1f W", abs(w))
+    }
 }
