@@ -21,10 +21,19 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
     @Published private(set) var skippedPaths: [DiskSpaceSkippedPath] = []
 
     private var scanTask: Task<Void, Never>?
+    private var scanGeneration = 0
+    private var lastProgressPublishedAt: Date?
+    private var lastProgressPublishedScannedCount = 0
     private let analyzer: DiskSpaceAnalyzer
+    private let progressPublishInterval: TimeInterval = 0.2
+    private let progressPublishCountInterval = 100
 
     init(analyzer: DiskSpaceAnalyzer = DiskSpaceAnalyzer(maxResults: 50)) {
         self.analyzer = analyzer
+    }
+
+    deinit {
+        scanTask?.cancel()
     }
 
     var isScanning: Bool {
@@ -46,14 +55,16 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
 
     func startScan() {
         scanTask?.cancel()
+        scanGeneration += 1
         resetForScan()
 
         let root = rootURL
-        scanTask = Task { [analyzer] in
+        let generation = scanGeneration
+        scanTask = Task { [weak self, analyzer] in
             let result = await analyzer.scan(rootURL: root) { [weak self] progress in
-                await self?.apply(progress)
+                await self?.apply(progress, generation: generation)
             }
-            await apply(result)
+            await self?.apply(result, generation: generation)
         }
     }
 
@@ -69,9 +80,13 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
         largestFolders = []
         largestFiles = []
         skippedPaths = []
+        lastProgressPublishedAt = nil
+        lastProgressPublishedScannedCount = 0
     }
 
-    private func apply(_ progress: DiskSpaceScanProgress) {
+    private func apply(_ progress: DiskSpaceScanProgress, generation: Int) {
+        guard generation == scanGeneration, shouldPublish(progress) else { return }
+
         scannedCount = progress.scannedCount
         skippedCount = progress.skippedCount
         currentPath = progress.currentPath
@@ -79,7 +94,9 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
         largestFiles = progress.largestFiles
     }
 
-    private func apply(_ result: DiskSpaceScanResult) {
+    private func apply(_ result: DiskSpaceScanResult, generation: Int) {
+        guard generation == scanGeneration else { return }
+
         scannedCount = result.scannedCount
         skippedCount = result.skippedPaths.count
         currentPath = nil
@@ -88,5 +105,28 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
         skippedPaths = result.skippedPaths
         phase = result.state == .cancelled ? .cancelled : .completed
         scanTask = nil
+    }
+
+    private func shouldPublish(_ progress: DiskSpaceScanProgress) -> Bool {
+        let now = Date()
+        guard let lastProgressPublishedAt else {
+            recordPublishedProgress(progress, at: now)
+            return true
+        }
+
+        let elapsed = now.timeIntervalSince(lastProgressPublishedAt)
+        let scannedDelta = progress.scannedCount - lastProgressPublishedScannedCount
+        let shouldPublish = elapsed >= progressPublishInterval || scannedDelta >= progressPublishCountInterval
+
+        if shouldPublish {
+            recordPublishedProgress(progress, at: now)
+        }
+
+        return shouldPublish
+    }
+
+    private func recordPublishedProgress(_ progress: DiskSpaceScanProgress, at date: Date) {
+        lastProgressPublishedAt = date
+        lastProgressPublishedScannedCount = progress.scannedCount
     }
 }
