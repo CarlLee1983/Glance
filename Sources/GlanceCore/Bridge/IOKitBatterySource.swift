@@ -60,7 +60,7 @@ public struct IOKitBatterySource: BatteryStatsSource {
         // 退而求其次用 AppleRawMaxCapacity。
         if let design = intProp("DesignCapacity"), design > 0,
            let maxCap = intProp("NominalChargeCapacity") ?? intProp("AppleRawMaxCapacity") {
-            adv.healthFraction = Double(maxCap) / Double(design)
+            adv.healthFraction = min(1.0, Double(maxCap) / Double(design))
         }
 
         // 溫度單位為 1/100 °C。

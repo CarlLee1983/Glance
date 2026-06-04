@@ -8,6 +8,10 @@ final class FormattersTests: XCTestCase {
         XCTAssertEqual(Formatters.percent(1), "100%")
     }
 
+    func testPercentClampsAboveOne() {
+        XCTAssertEqual(Formatters.percent(1.03), "100%")
+    }
+
     func testBytesGB() {
         XCTAssertEqual(Formatters.bytes(10_522_669_875), "9.8 GB")
     }
