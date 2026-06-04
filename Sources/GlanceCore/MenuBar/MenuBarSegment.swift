@@ -24,31 +24,31 @@ public struct SegmentReading: Equatable {
 public enum MenuBarText {
     public static func readings(snapshot: SystemSnapshot?, segments: [MenuBarSegment]) -> [SegmentReading] {
         guard let snapshot else { return [] }
-        var out: [SegmentReading] = []
+        var result: [SegmentReading] = []
         for seg in segments {
             switch seg {
             case .cpu:
                 if let c = snapshot.cpu {
-                    out.append(SegmentReading(segment: .cpu, value: Formatters.percent(c.totalUsage)))
+                    result.append(SegmentReading(segment: .cpu, value: Formatters.percent(c.totalUsage)))
                 }
             case .memory:
                 if let m = snapshot.memory {
-                    out.append(SegmentReading(segment: .memory, value: Formatters.percent(m.usedFraction)))
+                    result.append(SegmentReading(segment: .memory, value: Formatters.percent(m.usedFraction)))
                 }
             case .network:
                 if let n = snapshot.network {
-                    out.append(SegmentReading(segment: .network, value: Formatters.rateCompact(n.downBytesPerSec)))
+                    result.append(SegmentReading(segment: .network, value: Formatters.rateCompact(n.downBytesPerSec)))
                 }
             case .disk:
                 if let d = snapshot.disk {
-                    out.append(SegmentReading(segment: .disk, value: Formatters.percent(d.usedFraction)))
+                    result.append(SegmentReading(segment: .disk, value: Formatters.percent(d.usedFraction)))
                 }
             case .battery:
                 if let b = snapshot.battery, b.isPresent {
-                    out.append(SegmentReading(segment: .battery, value: Formatters.percent(b.chargeFraction)))
+                    result.append(SegmentReading(segment: .battery, value: Formatters.percent(b.chargeFraction)))
                 }
             }
         }
-        return out
+        return result
     }
 }

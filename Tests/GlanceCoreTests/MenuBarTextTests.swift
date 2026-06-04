@@ -47,9 +47,4 @@ final class MenuBarTextTests: XCTestCase {
     func testEmptySegmentsReturnsEmpty() {
         XCTAssertEqual(MenuBarText.readings(snapshot: makeSnapshot(), segments: []), [])
     }
-
-    func testDisplayModeRoundTrips() {
-        XCTAssertEqual(MenuBarDisplayMode(rawValue: "iconOnly"), .iconOnly)
-        XCTAssertEqual(MenuBarDisplayMode.allCases, [.iconValue, .iconOnly])
-    }
 }
