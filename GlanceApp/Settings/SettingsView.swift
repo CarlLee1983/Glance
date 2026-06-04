@@ -44,6 +44,8 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("選單列欄位(拖曳調整順序)") {
+                // 巢狀 List 是刻意為之:macOS 上 List 的 .onMove 會原生提供拖曳把手,
+                // 不需切換 editMode;固定高度避免與外層 Form 捲動產生視覺衝突。
                 List {
                     ForEach(order, id: \.self) { seg in
                         Toggle(label(seg), isOn: Binding(
@@ -66,6 +68,8 @@ struct SettingsView: View {
     }
 
     /// 只把「啟用中」的欄位依目前順序寫回 menuBarSegments(逗號字串保序)。
+    /// 用 `UserDefaults.standard.set` 而非 @AppStorage binding:兩者共用同一 suite,
+    /// 寫入會傳播給 MenuBarLabel 的 @AppStorage 觀察者,且避免 binding 循環。
     private func persist() {
         let raw = order.filter { enabled.contains($0) }
             .map(\.rawValue)
