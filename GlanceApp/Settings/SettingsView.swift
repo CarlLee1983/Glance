@@ -37,10 +37,10 @@ struct SettingsView: View {
             Section("選單列樣式") {
                 Picker("樣式", selection: $displayModeRaw) {
                     Text("圖示 + 數值").tag(MenuBarDisplayMode.iconValue.rawValue)
-                    Text("僅圖示").tag(MenuBarDisplayMode.iconOnly.rawValue)
+                    Text("狀態圖示").tag(MenuBarDisplayMode.iconOnly.rawValue)
                 }
                 .pickerStyle(.radioGroup)
-                Text("瀏海機型可選「僅圖示」最省選單列寬度")
+                Text("狀態圖示會以顏色呈現各欄位狀態,同時維持最省選單列寬度")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("選單列欄位(拖曳調整順序)") {
