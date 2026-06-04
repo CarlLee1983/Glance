@@ -44,6 +44,7 @@ public enum Formatters {
     }
 
     /// 瓦數 → "12.4 W"(一位小數,以絕對值顯示)。
+    /// 以絕對值顯示;電池充放電方向由其他文字(已連接電源/使用電池)表達,故此處不帶正負號。
     public static func watts(_ w: Double) -> String {
         String(format: "%.1f W", abs(w))
     }

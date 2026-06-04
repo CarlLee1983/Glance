@@ -22,6 +22,12 @@ struct SensorsSection: View {
                 if let p = snapshot.systemPower {
                     row("功耗", Formatters.watts(p))
                 }
+                if let cp = snapshot.cpuPower {
+                    row("CPU 功耗", Formatters.watts(cp))
+                }
+                if let gp = snapshot.gpuPower, gp >= 0.1 {
+                    row("GPU 功耗", Formatters.watts(gp))
+                }
                 if !snapshot.fanRPM.isEmpty {
                     let value = snapshot.fanRPM.map { "\($0) RPM" }.joined(separator: " / ")
                     row("風扇", value)

@@ -92,6 +92,8 @@ private struct SMCKeyData {
 ///   (MetricsStore 計時器)。請勿並發呼叫 read()。
 public final class SMCFanSource: FanSource {
     private var conn: io_connect_t = 0
+    /// 風扇數快取:成功讀取後固定,含 0(無風扇機型)。nil 表示尚未讀取或曾讀取失敗。
+    private var cachedFanCount: Int?
 
     public init() {
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSMC"))
@@ -107,7 +109,12 @@ public final class SMCFanSource: FanSource {
 
     public func read() -> [Int] {
         guard conn != 0 else { return [] }
-        guard let count = readFanCount(), count > 0, count < 64 else { return [] }
+        // 首次或前次讀取失敗時才向 SMC 查詢 FNum;成功後(含 0)快取不再重查。
+        if cachedFanCount == nil {
+            guard let count = readFanCount(), count < 64 else { return [] }
+            cachedFanCount = count
+        }
+        guard let count = cachedFanCount, count > 0 else { return [] }
 
         var rpms: [Int] = []
         for i in 0..<count {
