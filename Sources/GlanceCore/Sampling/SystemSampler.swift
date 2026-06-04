@@ -29,8 +29,7 @@ public final class SystemSampler: SystemSampling {
             network: NetworkSampler(source: InterfaceCountersSource()),
             disk: DiskSampler(source: StatfsDiskSource()),
             battery: BatterySampler(source: IOKitBatterySource()),
-            process: ProcessSampler(source: LibprocSource(), limit: 5),
-            sensor: SensorSampler())
+            process: ProcessSampler(source: LibprocSource(), limit: 5))
     }
 
     public func sample() -> SystemSnapshot {

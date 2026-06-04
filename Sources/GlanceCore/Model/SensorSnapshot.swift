@@ -15,7 +15,7 @@ public struct SensorSnapshot: Equatable {
         self.gpuPower = gpuPower; self.fanRPM = fanRPM
     }
 
-    /// 三類來源皆無資料 → 視為整體無感測器(UI 整區隱藏)。
+    /// 五個感測欄位皆 nil 且無風扇轉速 → 視為整體無感測器(UI 整區隱藏)。
     public var isEmpty: Bool {
         cpuTemperature == nil && gpuTemperature == nil && systemPower == nil
             && cpuPower == nil && gpuPower == nil && fanRPM.isEmpty

@@ -21,6 +21,9 @@ private struct FixedBattery: BatteryStatsSource {
 private struct FixedProc: RawProcessSource {
     func read() -> [RawProcess]? { [RawProcess(pid: 1, name: "X", cpuTimeSeconds: 0, memoryBytes: 10)] }
 }
+private struct FixedThermal: ThermalSource {
+    func read() -> ThermalReading? { ThermalReading(cpu: 45, gpu: nil) }
+}
 
 final class SystemSamplerTests: XCTestCase {
     func testSampleAggregatesAllMetrics() {
@@ -36,5 +39,18 @@ final class SystemSamplerTests: XCTestCase {
         XCTAssertEqual(snap.disk?.usedBytes, 40)
         XCTAssertEqual(snap.battery?.chargeFraction, 0.5)
         XCTAssertEqual(snap.topByMemory.first?.name, "X")
+    }
+
+    func testSensorsAreWiredThrough() {
+        let sampler = SystemSampler(
+            cpu: CPUSampler(source: FixedCPU()),
+            memory: MemorySampler(source: FixedMem()),
+            network: NetworkSampler(source: FixedNet(), clock: { 0 }),
+            disk: DiskSampler(source: FixedDisk()),
+            battery: BatterySampler(source: FixedBattery()),
+            process: ProcessSampler(source: FixedProc(), clock: { 0 }, limit: 5),
+            sensor: SensorSampler(thermal: FixedThermal()))
+        let snap = sampler.sample()
+        XCTAssertEqual(snap.sensors?.cpuTemperature, 45)
     }
 }
