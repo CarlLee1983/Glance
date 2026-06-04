@@ -6,17 +6,22 @@ struct NetworkSection: View {
     let downHistory: [Double]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("網路").font(.headline)
-                Spacer()
-                if let n = snapshot {
-                    Text("↓\(Formatters.rateCompact(n.downBytesPerSec))  ↑\(Formatters.rateCompact(n.upBytesPerSec))")
-                        .monospacedDigit().font(.callout)
-                }
-            }
+        MetricCard(
+            title: "網路",
+            systemImage: "network",
+            accent: .orange,
+            value: snapshot.map { "↓\(Formatters.rateCompact($0.downBytesPerSec))" } ?? "—",
+            detail: networkDetail,
+            status: nil
+        ) {
             Sparkline(values: downHistory, maxValue: nil, color: .orange)
-                .frame(height: 40)
+                .frame(height: 42)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
         }
+    }
+
+    private var networkDetail: String {
+        guard let n = snapshot else { return "等待網路取樣" }
+        return "上傳 \(Formatters.rateCompact(n.upBytesPerSec))/s · 下載 \(Formatters.rateCompact(n.downBytesPerSec))/s"
     }
 }
