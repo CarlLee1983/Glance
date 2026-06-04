@@ -30,7 +30,7 @@ public final class SystemSampler: SystemSampling {
             disk: DiskSampler(source: StatfsDiskSource()),
             battery: BatterySampler(source: IOKitBatterySource()),
             process: ProcessSampler(source: LibprocSource(), limit: 5),
-            sensor: SensorSampler(thermal: IOHIDThermalSource()))
+            sensor: SensorSampler(thermal: IOHIDThermalSource(), power: IOReportPowerSource()))
     }
 
     public func sample() -> SystemSnapshot {
