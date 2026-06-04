@@ -85,20 +85,18 @@ final class DiskSpaceAnalyzerTests: XCTestCase {
         }
 
         let analyzer = DiskSpaceAnalyzer(maxResults: 10)
-        let progressStream = AsyncStream<Int>.makeStream()
+        let cancellationGate = CancellationGate()
         let scanTask = Task {
             await analyzer.scan(rootURL: root) { progress in
                 if progress.scannedCount > 0 {
-                    progressStream.continuation.yield(progress.scannedCount)
+                    await cancellationGate.pauseUntilReleased()
                 }
             }
         }
 
-        for await _ in progressStream.stream {
-            scanTask.cancel()
-            progressStream.continuation.finish()
-            break
-        }
+        await cancellationGate.waitForPause()
+        scanTask.cancel()
+        await cancellationGate.release()
         let result = await scanTask.value
 
         XCTAssertEqual(result.state, .cancelled)
@@ -115,5 +113,33 @@ final class DiskSpaceAnalyzerTests: XCTestCase {
     private func writeFile(_ url: URL, byteCount: Int) throws {
         let data = Data(repeating: 0x7A, count: byteCount)
         try data.write(to: url)
+    }
+}
+
+private actor CancellationGate {
+    private var isPaused = false
+    private var pauseContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+    func waitForPause() async {
+        if isPaused { return }
+        await withCheckedContinuation { continuation in
+            pauseContinuation = continuation
+        }
+    }
+
+    func pauseUntilReleased() async {
+        guard !isPaused else { return }
+        isPaused = true
+        pauseContinuation?.resume()
+        pauseContinuation = nil
+        await withCheckedContinuation { continuation in
+            releaseContinuation = continuation
+        }
+    }
+
+    func release() {
+        releaseContinuation?.resume()
+        releaseContinuation = nil
     }
 }
