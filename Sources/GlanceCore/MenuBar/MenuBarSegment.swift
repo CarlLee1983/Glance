@@ -6,16 +6,19 @@ public enum MenuBarSegment: String, CaseIterable, Codable {
 /// 選單列呈現模式。
 public enum MenuBarDisplayMode: String, CaseIterable, Codable {
     case iconValue  // 圖示 + 數值
-    case iconOnly   // 僅圖示(最省寬度)
+    case iconOnly   // 狀態圖示;raw value 保留以維持 UserDefaults 相容
 }
 
-/// 單一欄位的選單列讀數:欄位身分 + 已格式化的數值字串(不含圖示/箭頭)。
+/// 單一欄位的選單列讀數:欄位身分 + 已格式化數值 + 粗略狀態。
 public struct SegmentReading: Equatable {
     public let segment: MenuBarSegment
     public let value: String
-    public init(segment: MenuBarSegment, value: String) {
+    public let status: MetricStatus
+
+    public init(segment: MenuBarSegment, value: String, status: MetricStatus) {
         self.segment = segment
         self.value = value
+        self.status = status
     }
 }
 
@@ -29,23 +32,46 @@ public enum MenuBarText {
             switch seg {
             case .cpu:
                 if let c = snapshot.cpu {
-                    result.append(SegmentReading(segment: .cpu, value: Formatters.percent(c.totalUsage)))
+                    result.append(SegmentReading(
+                        segment: .cpu,
+                        value: Formatters.percent(c.totalUsage),
+                        status: MetricStatus.load(fraction: c.totalUsage)
+                    ))
                 }
             case .memory:
                 if let m = snapshot.memory {
-                    result.append(SegmentReading(segment: .memory, value: Formatters.percent(m.usedFraction)))
+                    result.append(SegmentReading(
+                        segment: .memory,
+                        value: Formatters.percent(m.usedFraction),
+                        status: MetricStatus.capacity(fraction: m.usedFraction)
+                    ))
                 }
             case .network:
                 if let n = snapshot.network {
-                    result.append(SegmentReading(segment: .network, value: Formatters.rateCompact(n.downBytesPerSec)))
+                    result.append(SegmentReading(
+                        segment: .network,
+                        value: Formatters.rateCompact(n.downBytesPerSec),
+                        status: .normal
+                    ))
                 }
             case .disk:
                 if let d = snapshot.disk {
-                    result.append(SegmentReading(segment: .disk, value: Formatters.percent(d.usedFraction)))
+                    result.append(SegmentReading(
+                        segment: .disk,
+                        value: Formatters.percent(d.usedFraction),
+                        status: MetricStatus.capacity(fraction: d.usedFraction)
+                    ))
                 }
             case .battery:
                 if let b = snapshot.battery, b.isPresent {
-                    result.append(SegmentReading(segment: .battery, value: Formatters.percent(b.chargeFraction)))
+                    result.append(SegmentReading(
+                        segment: .battery,
+                        value: Formatters.percent(b.chargeFraction),
+                        status: MetricStatus.battery(
+                            chargeFraction: b.chargeFraction,
+                            isCharging: b.isCharging
+                        )
+                    ))
                 }
             }
         }
