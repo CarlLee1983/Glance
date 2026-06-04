@@ -85,13 +85,19 @@ final class DiskSpaceAnalyzerTests: XCTestCase {
         }
 
         let analyzer = DiskSpaceAnalyzer(maxResults: 10)
-        var scanTask: Task<DiskSpaceScanResult, Never>!
-        scanTask = Task {
+        let progressStream = AsyncStream<Int>.makeStream()
+        let scanTask = Task {
             await analyzer.scan(rootURL: root) { progress in
                 if progress.scannedCount > 0 {
-                    scanTask.cancel()
+                    progressStream.continuation.yield(progress.scannedCount)
                 }
             }
+        }
+
+        for await _ in progressStream.stream {
+            scanTask.cancel()
+            progressStream.continuation.finish()
+            break
         }
         let result = await scanTask.value
 
