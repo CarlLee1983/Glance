@@ -30,6 +30,9 @@ private func IOReportChannelGetUnitLabel(_ ch: CFDictionary) -> CFString?
 @_silgen_name("IOReportSimpleGetIntegerValue")
 private func IOReportSimpleGetIntegerValue(_ ch: CFDictionary, _ a: Int32) -> Int64
 
+/// 取樣字典中通道陣列的鍵名。
+private let kIOReportChannelsKey = "IOReportChannels"
+
 /// 以 IOReport「Energy Model」群組讀 SoC 能量,兩次取樣間差值換算瞬時瓦數。
 ///
 /// 能量通道為累積計數器:瞬時功率 = 能量差 / 時間差。本來源為**有狀態**——
@@ -37,11 +40,16 @@ private func IOReportSimpleGetIntegerValue(_ ch: CFDictionary, _ a: Int32) -> In
 ///
 /// - Important: `@_silgen_name` 綁定**私有**符號,無 App Store 合規保證,
 ///   也不受 Apple SDK 穩定性承諾約束;macOS 主版本升級後需重新驗證單位與通道名。
+/// - Warning: 非執行緒安全。`read()` 必須由單一串行佇列呼叫;
+///   目前由 MetricsStore 的 DispatchSourceTimer(單一序列觸發)保證,
+///   請勿並發呼叫(包含在 timer 運作中於主執行緒呼叫 tick())。
 public final class IOReportPowerSource: PowerSource {
     private let subscription: CFTypeRef?
     private let channels: CFMutableDictionary?
     private var lastSample: CFDictionary?
-    private var lastTime: TimeInterval?
+    // 單調時鐘:`DispatchTime.uptimeNanoseconds` 不受 NTP 校時/回撥影響,
+    // 且系統睡眠時暫停——與能量計數器於睡眠時同樣不前進的特性一致。
+    private var lastTick: UInt64?
 
     public init() {
         guard let chans = IOReportCopyChannelsInGroup("Energy Model" as CFString, nil, 0, 0, 0)?.takeRetainedValue() else {
@@ -59,16 +67,17 @@ public final class IOReportPowerSource: PowerSource {
         guard let subscription, let channels,
               let current = IOReportCreateSamples(subscription, channels, nil)?.takeRetainedValue()
         else { return nil }
-        let now = Date().timeIntervalSince1970
-        defer { lastSample = current; lastTime = now }
+        let nowTick = DispatchTime.now().uptimeNanoseconds
+        defer { lastSample = current; lastTick = nowTick }
 
-        guard let prev = lastSample, let prevTime = lastTime,
+        guard let prev = lastSample, let prevTick = lastTick, nowTick > prevTick,
               let delta = IOReportCreateSamplesDelta(prev, current, nil)?.takeRetainedValue()
         else { return nil }
-        let dt = now - prevTime
-        guard dt > 0 else { return nil }
+        let dt = Double(nowTick - prevTick) / 1_000_000_000
+        // 最小取樣間隔守門:太短的間隔(抖動)會放大誤差,直接略過。
+        guard dt >= 0.1 else { return nil }
 
-        guard let chList = (delta as NSDictionary)["IOReportChannels"] as? [CFDictionary] else { return nil }
+        guard let chList = (delta as NSDictionary)[kIOReportChannelsKey] as? [CFDictionary] else { return nil }
 
         // Energy Model 群組為階層式:cluster(ecpu/pcpu)、per-core(ecpu0…)、
         // detail(ecpudtlXX)、sram 等都是 `cpu energy` 子集。全部相加會嚴重重複計算,
@@ -91,7 +100,8 @@ public final class IOReportPowerSource: PowerSource {
             case .other: break
             }
         }
-        guard total > 0 else { return nil }
+        // 上限守門:M-series TDP 遠低於 100 W,200 已寬鬆;超出視為瞬時異常,棄樣。
+        guard total > 0, total < 200 else { return nil }
         return PowerReading(system: total, cpu: cpu, gpu: gpu)
     }
 
@@ -101,6 +111,10 @@ public final class IOReportPowerSource: PowerSource {
     /// 未在白名單者回 nil(略過)。M-series Energy Model 實測通道:
     /// `cpu energy`(CPU 總量)、`gpu energy`(GPU 總量)、`dram`、`amcc`、`dcs`
     /// (記憶體控制器/快取)、`isp`、`ave`(ANE)、`msr`、`disp`/`dispext`(顯示)、`soc_aon`。
+    ///
+    /// - Note: 未知/新增通道一律落入 default → nil,因此**不計入 `total`**,
+    ///   結果為**寧可低估也不重複計算**的安靜 under-count(較 double-count 安全)。
+    ///   新 SoC 上市時應重新列舉通道(見 read() 解析的 channel name)並更新此白名單。
     private static func topLevelDomain(_ name: String) -> Domain? {
         switch name {
         case "cpu energy": return .cpu
