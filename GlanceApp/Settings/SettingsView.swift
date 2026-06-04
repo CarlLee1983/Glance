@@ -84,6 +84,8 @@ struct SettingsView: View {
         case .network: return "網路"
         case .disk:    return "磁碟"
         case .battery: return "電池"
+        case .cpuTemp: return "CPU 溫度"
+        case .power:   return "功耗"
         }
     }
 }

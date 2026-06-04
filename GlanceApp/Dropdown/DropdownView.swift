@@ -23,6 +23,9 @@ struct DropdownView: View {
             if let b = s?.battery, b.isPresent {
                 BatterySection(snapshot: b)
             }
+            if let sensors = s?.sensors, !sensors.isEmpty {
+                SensorsSection(snapshot: sensors)
+            }
 
             HStack(spacing: 12) {
                 Button {

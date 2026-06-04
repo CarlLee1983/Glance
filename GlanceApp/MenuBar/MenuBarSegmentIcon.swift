@@ -9,6 +9,8 @@ enum MenuBarSegmentIcon {
         case .network: return "arrow.down"
         case .disk:    return "internaldrive"
         case .battery: return "battery.100"
+        case .cpuTemp: return "thermometer.medium"
+        case .power:   return "bolt"
         }
     }
 }
