@@ -85,12 +85,15 @@ final class DiskSpaceAnalyzerTests: XCTestCase {
         }
 
         let analyzer = DiskSpaceAnalyzer(maxResults: 10)
-        let task = Task {
-            await analyzer.scan(rootURL: root) { _ in
-                Task.cancel()
+        var scanTask: Task<DiskSpaceScanResult, Never>!
+        scanTask = Task {
+            await analyzer.scan(rootURL: root) { progress in
+                if progress.scannedCount > 0 {
+                    scanTask.cancel()
+                }
             }
         }
-        let result = await task.value
+        let result = await scanTask.value
 
         XCTAssertEqual(result.state, .cancelled)
     }
