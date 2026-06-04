@@ -26,4 +26,12 @@ final class MetricStatusTests: XCTestCase {
         XCTAssertEqual(MetricStatus.critical.label, "注意")
         XCTAssertEqual(MetricStatus.charging.label, "充電中")
     }
+
+    func testTemperatureStatusBands() {
+        XCTAssertEqual(MetricStatus.temperature(celsius: 60), .normal)
+        XCTAssertEqual(MetricStatus.temperature(celsius: 79.9), .normal)
+        XCTAssertEqual(MetricStatus.temperature(celsius: 80), .elevated)
+        XCTAssertEqual(MetricStatus.temperature(celsius: 94.9), .elevated)
+        XCTAssertEqual(MetricStatus.temperature(celsius: 95), .critical)
+    }
 }

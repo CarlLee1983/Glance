@@ -28,6 +28,12 @@ public enum MetricStatus: Equatable {
         return chargeFraction < 0.2 ? .critical : .normal
     }
 
+    public static func temperature(celsius: Double) -> MetricStatus {
+        if celsius >= 95 { return .critical }
+        if celsius >= 80 { return .elevated }
+        return .normal
+    }
+
     private static func band(fraction: Double, elevated: Double, critical: Double) -> MetricStatus {
         if fraction >= critical { return .critical }
         if fraction >= elevated { return .elevated }
