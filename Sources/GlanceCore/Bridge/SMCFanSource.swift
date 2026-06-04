@@ -23,7 +23,8 @@ private func fourCC(_ s: String) -> UInt32 {
     return v
 }
 
-// C `SMCKeyData_vers_t`(8 bytes)。
+// C `SMCKeyData_vers_t`(major/minor/build/reserved: UInt8 + release: UInt16)。
+// 欄位與 SMCKit `SMCVersion` 完全一致;外層結構對齊使其後出現 2-byte 填補。
 private struct SMCVersion {
     var major: UInt8 = 0
     var minor: UInt8 = 0
@@ -41,20 +42,27 @@ private struct SMCPLimitData {
     var memPLimit: UInt32 = 0
 }
 
-// C `SMCKeyData_keyInfo_t`(9 bytes;結構對齊後實際佔位由整體 layout 決定)。
+// C `SMCKeyData_keyInfo_t`(dataSize/dataType: UInt32 + dataAttributes: UInt8,
+// 含尾端填補)。欄位與 SMCKit `SMCKeyInfoData` 完全一致。
 private struct SMCKeyInfoData {
     var dataSize: UInt32 = 0
     var dataType: UInt32 = 0
     var dataAttributes: UInt8 = 0
 }
 
-// C `SMCKeyData_t`:IOConnectCallStructMethod 的輸入/輸出結構。
-// 欄位順序與大小須與核心驅動完全一致;以 32-byte tuple 承接 bytes。
+/// C `SMCKeyData_t`(= SMCKit `SMCParamStruct`):IOConnectCallStructMethod 的輸入/輸出結構。
+///
+/// - Important: 必須與 C `SMCKeyData_t` **二進位相容**,stride 恆為 **80 bytes**。
+///   欄位順序/大小須與核心驅動逐一對齊,否則 `data8`/`result`/`keyInfo`/`bytes`
+///   會落在錯誤偏移——在無風扇機型恰好回 [](看不出),卻會在「有風扇」機型讀出垃圾。
+///   `keyInfo` 與 `result` 之間有 SMCKit 明定的 `padding: UInt16`;`read()` 入口以
+///   `assert(stride == 80)` 守門,避免未來意外更動佈局。
 private struct SMCKeyData {
     var key: UInt32 = 0
     var vers = SMCVersion()
     var pLimitData = SMCPLimitData()
     var keyInfo = SMCKeyInfoData()
+    var padding: UInt16 = 0
     var result: UInt8 = 0
     var status: UInt8 = 0
     var data8: UInt8 = 0
@@ -91,6 +99,9 @@ public final class SMCFanSource: FanSource {
     deinit { if conn != 0 { IOServiceClose(conn) } }
 
     public func read() -> [Int] {
+        // 佈局守門:結構須與 C `SMCKeyData_t` 二進位相容(80 bytes)。
+        // assert 於 release 編譯移除,僅在 debug 攔截意外的佈局變動。
+        assert(MemoryLayout<SMCKeyData>.stride == 80, "SMCKeyData layout drift")
         guard conn != 0 else { return [] }
         guard let count = readFanCount(), count > 0, count < 64 else { return [] }
 
