@@ -8,6 +8,10 @@ final class FormattersTests: XCTestCase {
         XCTAssertEqual(Formatters.percent(1), "100%")
     }
 
+    func testPercentClampsAboveOne() {
+        XCTAssertEqual(Formatters.percent(1.03), "100%")
+    }
+
     func testBytesGB() {
         XCTAssertEqual(Formatters.bytes(10_522_669_875), "9.8 GB")
     }
@@ -26,5 +30,16 @@ final class FormattersTests: XCTestCase {
         XCTAssertEqual(Formatters.percentLoose(1.5), "150%")
         XCTAssertEqual(Formatters.percentLoose(0.02), "2%")
         XCTAssertEqual(Formatters.percentLoose(-0.1), "0%")
+    }
+
+    func testTemperatureFormatsWholeDegrees() {
+        XCTAssertEqual(Formatters.temperature(52.4), "52°C")
+        XCTAssertEqual(Formatters.temperature(47.6), "48°C")
+    }
+
+    func testWattsFormatsOneDecimal() {
+        XCTAssertEqual(Formatters.watts(12.43), "12.4 W")
+        XCTAssertEqual(Formatters.watts(3), "3.0 W")
+        XCTAssertEqual(Formatters.watts(-8.2), "8.2 W")
     }
 }

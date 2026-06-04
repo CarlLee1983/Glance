@@ -37,4 +37,15 @@ public enum Formatters {
         if v < 1024 * 1024 { return String(format: "%.1fK", v / 1024) }
         return String(format: "%.1fM", v / (1024 * 1024))
     }
+
+    /// 攝氏溫度 → "52°C"(四捨五入到整數度)。
+    public static func temperature(_ celsius: Double) -> String {
+        "\(Int(celsius.rounded()))°C"
+    }
+
+    /// 瓦數 → "12.4 W"(一位小數,以絕對值顯示)。
+    /// 以絕對值顯示;電池充放電方向由其他文字(已連接電源/使用電池)表達,故此處不帶正負號。
+    public static func watts(_ w: Double) -> String {
+        String(format: "%.1f W", abs(w))
+    }
 }

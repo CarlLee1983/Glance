@@ -18,7 +18,7 @@ public final class MetricsStore: ObservableObject {
     /// 執行緒契約:**必須在主執行緒呼叫**——它會同步改動 `@Published`,供 SwiftUI 觀察。
     /// 僅作為測試掛勾(XCTest 預設在主執行緒執行);正式運作請改用 `start(interval:)`,
     /// 其計時器路徑會在背景取樣、再切回主執行緒發佈。
-    public func tick() {
+    func tick() {
         apply(sampler.sample())
     }
 

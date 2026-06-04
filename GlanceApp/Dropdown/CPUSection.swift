@@ -7,15 +7,29 @@ struct CPUSection: View {
     let topProcesses: [ProcessUsage]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("CPU").font(.headline)
-                Spacer()
-                Text(Formatters.percent(snapshot?.totalUsage ?? 0)).monospacedDigit()
-            }
+        let usage = snapshot?.totalUsage ?? 0
+        MetricCard(
+            title: "CPU",
+            systemImage: "cpu",
+            accent: .green,
+            value: Formatters.percent(usage),
+            detail: "User \(Formatters.percent(snapshot?.user ?? 0)) · System \(Formatters.percent(snapshot?.system ?? 0))",
+            status: MetricStatus.load(fraction: usage)
+        ) {
             Sparkline(values: history, maxValue: 1, color: .green)
-                .frame(height: 40)
-            TopProcessList(processes: topProcesses) { Formatters.percentLoose($0.cpuFraction) }
+                .frame(height: 42)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            if topProcesses.isEmpty {
+                EmptyMetricLine(text: "暫無高 CPU 程式")
+            } else {
+                TopProcessList(
+                    processes: topProcesses,
+                    accent: .green,
+                    relativeValue: { $0.cpuFraction },
+                    valueText: { Formatters.percentLoose($0.cpuFraction) }
+                )
+            }
         }
     }
 }
