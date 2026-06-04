@@ -11,6 +11,12 @@ private let kSMCSuccess: UInt8 = 0           // result 成功碼
 private let kSMCTypeFlt: UInt32 = fourCC("flt ")
 private let kSMCTypeFpe2: UInt32 = fourCC("fpe2")
 
+// 佈局守門(一次性):結構須與 C `SMCKeyData_t` 二進位相容(80 bytes)。
+// assert 於 release 編譯移除,僅在 debug 攔截意外的佈局變動。
+private let _smcLayoutCheck: Void = {
+    assert(MemoryLayout<SMCKeyData>.stride == 80, "SMCKeyData layout drift")
+}()
+
 /// 把 4 字元字串打包成 SMC 用的大端 FourCC(b0<<24 | b1<<16 | b2<<8 | b3)。
 /// 不足 4 字元以 0 補尾、超過則只取前 4。非 ASCII 字元位元組以 0 視之。
 private func fourCC(_ s: String) -> UInt32 {
@@ -94,14 +100,12 @@ public final class SMCFanSource: FanSource {
         // 開啟連線;失敗則 conn 維持 0,read() 直接回 []。
         let result = IOServiceOpen(service, mach_task_self_, 0, &conn)
         if result != kIOReturnSuccess { conn = 0 }
+        _ = _smcLayoutCheck   // 觸發一次性佈局守門。
     }
 
     deinit { if conn != 0 { IOServiceClose(conn) } }
 
     public func read() -> [Int] {
-        // 佈局守門:結構須與 C `SMCKeyData_t` 二進位相容(80 bytes)。
-        // assert 於 release 編譯移除,僅在 debug 攔截意外的佈局變動。
-        assert(MemoryLayout<SMCKeyData>.stride == 80, "SMCKeyData layout drift")
         guard conn != 0 else { return [] }
         guard let count = readFanCount(), count > 0, count < 64 else { return [] }
 
@@ -126,7 +130,7 @@ public final class SMCFanSource: FanSource {
     /// 讀第 i 個風扇的實際轉速 `F{i}Ac`,依 dataType 解碼為 RPM。
     private func readFanRPM(index: Int) -> Double? {
         guard let (data, info) = readKeyBytes(fourCC("F\(index)Ac")) else { return nil }
-        return decodeRPM(data, type: info.dataType, size: Int(info.dataSize))
+        return decodeRPM(data, type: info.dataType)
     }
 
     /// SMC 讀鍵完整流程:GetKeyInfo 取大小/型別 → ReadKey 取位元組。
@@ -172,12 +176,7 @@ public final class SMCFanSource: FanSource {
                                      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
                                      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8),
                             count: Int) -> [UInt8] {
-        var all = [tuple.0, tuple.1, tuple.2, tuple.3, tuple.4, tuple.5, tuple.6, tuple.7,
-                   tuple.8, tuple.9, tuple.10, tuple.11, tuple.12, tuple.13, tuple.14, tuple.15,
-                   tuple.16, tuple.17, tuple.18, tuple.19, tuple.20, tuple.21, tuple.22, tuple.23,
-                   tuple.24, tuple.25, tuple.26, tuple.27, tuple.28, tuple.29, tuple.30, tuple.31]
-        if count < all.count { all.removeLast(all.count - count) }
-        return all
+        withUnsafeBytes(of: tuple) { Array($0.prefix(count)) }
     }
 
     /// 解無號整數(大端,1–4 bytes)。
@@ -191,7 +190,7 @@ public final class SMCFanSource: FanSource {
     /// - `flt`:4-byte Float32,**小端**。
     /// - `fpe2`:2-byte 大端定點,value = (b0<<8|b1)/4。
     /// 未知型別回 nil。
-    private func decodeRPM(_ bytes: [UInt8], type: UInt32, size: Int) -> Double? {
+    private func decodeRPM(_ bytes: [UInt8], type: UInt32) -> Double? {
         switch type {
         case kSMCTypeFlt:
             guard bytes.count >= 4 else { return nil }
