@@ -7,7 +7,8 @@ final class MenuBarTextTests: XCTestCase {
         memoryUsedFraction: Double = 0.61,
         networkDownBytesPerSec: Double = 2_202_009,
         disk: DiskSnapshot? = nil,
-        battery: BatteryStats? = nil
+        battery: BatteryStats? = nil,
+        sensors: SensorSnapshot? = nil
     ) -> SystemSnapshot {
         SystemSnapshot(
             cpu: CPUSnapshot(totalUsage: cpuUsage, user: cpuUsage, system: 0, idle: 1 - cpuUsage),
@@ -25,6 +26,7 @@ final class MenuBarTextTests: XCTestCase {
             ),
             disk: disk,
             battery: battery,
+            sensors: sensors,
             topByCPU: [],
             topByMemory: []
         )
@@ -91,5 +93,22 @@ final class MenuBarTextTests: XCTestCase {
 
     func testEmptySegmentsReturnsEmpty() {
         XCTAssertEqual(MenuBarText.readings(snapshot: makeSnapshot(), segments: []), [])
+    }
+
+    func testTemperatureAndPowerReadings() {
+        let snapshot = makeSnapshot(
+            sensors: SensorSnapshot(cpuTemperature: 82, systemPower: 12.4))
+
+        let readings = MenuBarText.readings(snapshot: snapshot, segments: [.cpuTemp, .power])
+
+        XCTAssertEqual(readings, [
+            SegmentReading(segment: .cpuTemp, value: "82°C", status: .elevated),
+            SegmentReading(segment: .power, value: "12.4 W", status: .normal),
+        ])
+    }
+
+    func testSensorSegmentsSkippedWhenMissing() {
+        let readings = MenuBarText.readings(snapshot: makeSnapshot(), segments: [.cpuTemp, .power])
+        XCTAssertEqual(readings, [])
     }
 }
