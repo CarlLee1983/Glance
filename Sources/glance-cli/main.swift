@@ -22,7 +22,22 @@ if let d = s.disk {
     line("磁碟", "\(Formatters.bytes(d.usedBytes)) / \(Formatters.bytes(d.totalBytes)) (\(Formatters.percent(d.usedFraction)))")
 }
 if let b = s.battery, b.isPresent {
-    line("電池", "\(Formatters.percent(b.chargeFraction))\(b.isCharging ? " ⚡" : "")")
+    var extra: [String] = []
+    if let c = b.cycleCount { extra.append("循環\(c)") }
+    if let h = b.healthFraction { extra.append("健康\(Formatters.percent(h))") }
+    if let w = b.powerWatts { extra.append(Formatters.watts(w)) }
+    if let t = b.temperature { extra.append(Formatters.temperature(t)) }
+    let suffix = extra.isEmpty ? "" : "  [\(extra.joined(separator: " "))]"
+    line("電池", "\(Formatters.percent(b.chargeFraction))\(b.isCharging ? " ⚡" : "")\(suffix)")
+}
+if let sensor = s.sensors {
+    print("\n-- 感測器 --")
+    if let t = sensor.cpuTemperature { line("CPU 溫", Formatters.temperature(t)) }
+    if let t = sensor.gpuTemperature { line("GPU 溫", Formatters.temperature(t)) }
+    if let p = sensor.systemPower { line("功耗", Formatters.watts(p)) }
+    if !sensor.fanRPM.isEmpty {
+        line("風扇", sensor.fanRPM.map { "\($0) RPM" }.joined(separator: " / "))
+    }
 }
 print("\n-- Top CPU --")
 for p in s.topByCPU {
