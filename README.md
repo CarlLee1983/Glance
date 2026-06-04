@@ -36,12 +36,36 @@ CPU        25%
     xcodegen generate          # 由 project.yml 產生 Glance.xcodeproj
     xcodebuild -project Glance.xcodeproj -scheme Glance -destination 'platform=macOS' build
 
-建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池 區塊(CPU/記憶體含歷史曲線與 Top 程式)。下拉內可開「設定…」:
+建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池/感測器 區塊(CPU/記憶體含歷史曲線與 Top 程式)。下拉內可開「設定…」:
 
 - **登入時啟動 Glance**(`SMAppService`)
 - **更新頻率**(1~5 秒)
 - **選單列樣式**:圖示+數值 / 僅圖示(瀏海機型建議「僅圖示」最省寬度)
-- **選單列欄位**:CPU/記憶體/網路/磁碟/電池,可勾選並拖曳調整顯示順序
+- **選單列欄位**:CPU/記憶體/網路/磁碟/電池/CPU 溫度/功耗,可勾選並拖曳調整顯示順序
+
+### 感測器區塊
+
+下拉顯示即時感測讀數:
+
+| 欄位 | 說明 |
+| --- | --- |
+| **CPU 溫度** | 主值,使用私有 `IOHIDEventSystemClient` 讀取 |
+| **GPU 溫度** | 可得時顯示於列表 |
+| **SoC 功耗** | 以私有 `IOReport` 差值取樣(W) |
+| **風扇轉速** | RPM;無風扇機型(如 MacBook Air M4)自動省略 |
+
+### 電池進階資訊
+
+電池區塊的副標題會自動附加可得欄位:
+
+| 欄位 | 來源 |
+| --- | --- |
+| **循環次數** | `AppleSmartBattery` IORegistry |
+| **健康度** | 設計電容比值(%) |
+| **溫度** | 電池溫度(°C) |
+| **充放電瓦數** | 即時功率(W,充電為正/放電為負) |
+
+> **散佈方式**:溫度與功耗讀取使用私有 API(`IOHIDEventSystemClient`、`IOReport`),不符合 App Store 審查規範,因此本 App 採 **GitHub 直接散佈**,不上架 Mac App Store。
 
 > **MacBook(瀏海機型)注意**:若選單列項目過多,新項目可能被瀏海遮蔽而看不到。可用選單列管理工具(如 Ice:`brew install --cask jordanbaird-ice`)展開隱藏項目,或接外接螢幕檢視。
 
@@ -59,4 +83,4 @@ CPU        25%
 
 ## 不在 v1 範圍
 
-溫度/風扇(Apple Silicon 需 IOKit SMC 私有讀取)、登入時啟動、公證、磁碟即時讀寫量——架構已預留,日後再加。
+公證、磁碟即時讀寫量——架構已預留,日後再加。
