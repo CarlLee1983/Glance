@@ -35,7 +35,7 @@ struct DropdownView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
             }
-            .frame(maxHeight: maxScrollHeight)
+            .frame(height: scrollHeight)
 
             Divider()
                 .padding(.horizontal, 12)
@@ -48,15 +48,16 @@ struct DropdownView: View {
         .background(.regularMaterial)
     }
 
-    /// 中間捲動區的高度上限:扣掉 header / footer / 底部邊距後可用的高度,
-    /// 確保整個視窗不會超出可視範圍。內容不足時 ScrollView 會自動縮短,不出現捲軸。
-    private var maxScrollHeight: CGFloat {
+    /// 中間捲動區的固定高度:讓整個視窗一律約為螢幕可視高度的 4/5。
+    /// 內容不足時下方留白,內容過長時出現捲軸,視窗高度不隨內容變動。
+    private var scrollHeight: CGFloat {
         // 選單列 app 多半沒有 key window,NSScreen.main 可能為 nil,退回有選單列的主螢幕。
         let screen = NSScreen.main ?? NSScreen.screens.first
         let available = screen?.visibleFrame.height ?? 800
-        // 預留:header(~66) + footer/divider(~54) + 底部邊距(~30) ≈ 150
-        let reserved: CGFloat = 150
-        return max(360, available - reserved)
+        // 視窗整體目標高度 = 可視高度的 4/5;捲動區再扣掉 header(~66) + footer/divider(~54)。
+        let chrome: CGFloat = 120
+        let target = available * 0.8 - chrome
+        return max(360, target)
     }
 
     private var footer: some View {
