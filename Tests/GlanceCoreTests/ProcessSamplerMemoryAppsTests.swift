@@ -8,6 +8,25 @@ private final class StubMemSource: RawProcessSource {
 }
 
 final class ProcessSamplerMemoryAppsTests: XCTestCase {
+    func testNonAppProcessesAreNotMergedTogether() {
+        // 多個同名(node)但非 .app 的 CLI 行程不應被加總成一個;各自獨立呈現。
+        let procs = [
+            RawProcess(pid: 100, name: "node", cpuTimeSeconds: 0, memoryBytes: 1_300, executablePath: "/usr/local/bin/node"),
+            RawProcess(pid: 101, name: "node", cpuTimeSeconds: 0, memoryBytes: 170, executablePath: "/usr/local/bin/node"),
+            RawProcess(pid: 102, name: "node", cpuTimeSeconds: 0, memoryBytes: 40, executablePath: "/usr/local/bin/node"),
+        ]
+        let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
+        let apps = sampler.sample().topMemoryApps
+
+        XCTAssertEqual(apps.count, 3)
+        XCTAssertEqual(apps.map(\.memoryBytes), [1_300, 170, 40])
+        XCTAssertTrue(apps.allSatisfy { $0.appName == "node" })
+        XCTAssertTrue(apps.allSatisfy { $0.processCount == 1 })
+        XCTAssertTrue(apps.allSatisfy { $0.bundleURL == nil })
+        // id 必須各自唯一,才不會被歸成同一筆
+        XCTAssertEqual(Set(apps.map(\.id)).count, 3)
+    }
+
     func testSumsHelperProcessesUnderSameApp() {
         let chromeMain = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
         let chromeHelper = "/Applications/Google Chrome.app/Contents/Frameworks/X.framework/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"

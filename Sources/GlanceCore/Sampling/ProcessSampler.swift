@@ -43,17 +43,20 @@ public final class ProcessSampler {
 
     public func sampleTopMemoryApps() -> [AppMemoryUsage] { sample().topMemoryApps }
 
-    /// 按 app 鍵把各行程記憶體加總,由大到小排序取前 limit。
+    /// 把同一 `.app` 包的行程記憶體加總;非 .app 的 CLI 工具(node、tsserver…)
+    /// 各自獨立(以 pid 為鍵),避免把互不相干的同名行程誤加總。由大到小排序取前 limit。
     static func aggregateMemory(_ raws: [RawProcess], limit: Int) -> [AppMemoryUsage] {
         var byKey: [String: (name: String, url: URL?, bytes: UInt64, count: Int)] = [:]
         for p in raws {
             let id = AppGrouping.identity(executablePath: p.executablePath, fallbackName: p.name)
-            if var entry = byKey[id.groupKey] {
+            // 真正的 .app 才彙總;非 .app 以 pid 區隔,保持各自獨立
+            let key = id.bundleURL != nil ? id.groupKey : "pid:\(p.pid)"
+            if var entry = byKey[key] {
                 entry.bytes += p.memoryBytes
                 entry.count += 1
-                byKey[id.groupKey] = entry
+                byKey[key] = entry
             } else {
-                byKey[id.groupKey] = (id.appName, id.bundleURL, p.memoryBytes, 1)
+                byKey[key] = (id.appName, id.bundleURL, p.memoryBytes, 1)
             }
         }
         let apps = byKey.map { key, v in
