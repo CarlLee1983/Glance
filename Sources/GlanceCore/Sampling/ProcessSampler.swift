@@ -60,7 +60,9 @@ public final class ProcessSampler {
             AppMemoryUsage(id: key, appName: v.name, bundleURL: v.url, memoryBytes: v.bytes, processCount: v.count)
         }
         let sorted = apps.sorted {
-            $0.memoryBytes == $1.memoryBytes ? $0.appName < $1.appName : $0.memoryBytes > $1.memoryBytes
+            if $0.memoryBytes != $1.memoryBytes { return $0.memoryBytes > $1.memoryBytes }
+            if $0.appName != $1.appName { return $0.appName < $1.appName }
+            return $0.id < $1.id
         }
         return Array(sorted.prefix(limit))
     }

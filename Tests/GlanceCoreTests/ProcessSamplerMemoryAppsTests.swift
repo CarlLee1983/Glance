@@ -47,4 +47,16 @@ final class ProcessSamplerMemoryAppsTests: XCTestCase {
         let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 3)
         XCTAssertEqual(sampler.sample().topMemoryApps.count, 3)
     }
+
+    func testEqualMemoryAndNameAreOrderedDeterministicallyByKey() {
+        // 同名(Helper)同記憶體、但不同 bundle 路徑 → 應以 groupKey(id)穩定排序
+        let procs = [
+            RawProcess(pid: 1, name: "Helper", cpuTimeSeconds: 0, memoryBytes: 1_000, executablePath: "/Y/Helper.app/Contents/MacOS/H"),
+            RawProcess(pid: 2, name: "Helper", cpuTimeSeconds: 0, memoryBytes: 1_000, executablePath: "/X/Helper.app/Contents/MacOS/H"),
+        ]
+        let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
+        let apps = sampler.sample().topMemoryApps
+        XCTAssertEqual(apps.map(\.appName), ["Helper", "Helper"])
+        XCTAssertEqual(apps.map(\.id), ["/X/Helper.app", "/Y/Helper.app"])
+    }
 }
