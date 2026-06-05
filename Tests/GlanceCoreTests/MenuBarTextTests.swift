@@ -28,7 +28,7 @@ final class MenuBarTextTests: XCTestCase {
             battery: battery,
             sensors: sensors,
             topByCPU: [],
-            topByMemory: []
+            topMemoryApps: []
         )
     }
 

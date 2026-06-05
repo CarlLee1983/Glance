@@ -24,6 +24,6 @@ final class ProcessSamplerCombinedTests: XCTestCase {
         let result = sampler.sample() // consumes second
         XCTAssertEqual(result.topCPU.first?.name, "A")
         XCTAssertEqual(result.topCPU.first?.cpuFraction ?? -1, 0.9, accuracy: 0.001)
-        XCTAssertEqual(result.topMemory.first?.name, "B")
+        XCTAssertEqual(result.topMemoryApps.first?.appName, "B")
     }
 }

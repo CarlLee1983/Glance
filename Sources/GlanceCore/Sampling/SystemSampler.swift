@@ -46,6 +46,6 @@ public final class SystemSampler: SystemSampling {
             battery: battery.sample(),
             sensors: sensor.sample(),
             topByCPU: procs.topCPU,
-            topByMemory: procs.topMemory)
+            topMemoryApps: procs.topMemoryApps)
     }
 }
