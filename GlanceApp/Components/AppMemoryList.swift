@@ -3,17 +3,40 @@ import SwiftUI
 import GlanceCore
 
 /// 按 app 彙總的記憶體排行:第一名以較大列、app 圖示、「最佔用」標籤凸顯。
+/// 預設顯示前 `collapsedCount` 名,可展開看更多。
 struct AppMemoryList: View {
     let apps: [AppMemoryUsage]
     let accent: Color
 
+    @State private var expanded = false
+
+    private let collapsedCount = 5
+
     var body: some View {
-        let top = Array(apps.prefix(3))
-        let maxVal = max(Double(top.first?.memoryBytes ?? 1), 0.0001)
+        let visibleCount = expanded ? apps.count : min(collapsedCount, apps.count)
+        let visible = Array(apps.prefix(visibleCount))
+        let maxVal = max(Double(apps.first?.memoryBytes ?? 1), 0.0001)
 
         VStack(spacing: 5) {
-            ForEach(Array(top.enumerated()), id: \.element.id) { index, app in
+            ForEach(Array(visible.enumerated()), id: \.element.id) { index, app in
                 row(app, isTop: index == 0, maxVal: maxVal)
+            }
+
+            if apps.count > collapsedCount {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text(expanded ? "收合" : "顯示全部 \(apps.count) 個")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 3)
+                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

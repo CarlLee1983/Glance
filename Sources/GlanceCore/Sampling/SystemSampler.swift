@@ -29,7 +29,7 @@ public final class SystemSampler: SystemSampling {
             network: NetworkSampler(source: InterfaceCountersSource()),
             disk: DiskSampler(source: StatfsDiskSource()),
             battery: BatterySampler(source: IOKitBatterySource()),
-            process: ProcessSampler(source: LibprocSource(), limit: 5),
+            process: ProcessSampler(source: LibprocSource(), limit: 10),
             sensor: SensorSampler(
                 thermal: IOHIDThermalSource(),
                 power: IOReportPowerSource(),
