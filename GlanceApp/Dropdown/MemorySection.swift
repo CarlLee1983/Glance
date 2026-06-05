@@ -23,7 +23,7 @@ struct MemorySection: View {
             if topApps.isEmpty {
                 EmptyMetricLine(text: "暫無高記憶體程式")
             } else {
-                TopAppMemoryList(apps: topApps, accent: .blue)
+                AppMemoryList(apps: topApps, accent: .blue)
             }
         }
     }
