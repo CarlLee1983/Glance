@@ -38,7 +38,7 @@ final class SystemSamplerTests: XCTestCase {
         XCTAssertNotNil(snap.memory)
         XCTAssertEqual(snap.disk?.usedBytes, 40)
         XCTAssertEqual(snap.battery?.chargeFraction, 0.5)
-        XCTAssertEqual(snap.topByMemory.first?.name, "X")
+        XCTAssertEqual(snap.topMemoryApps.first?.appName, "X")
     }
 
     func testSensorsAreWiredThrough() {

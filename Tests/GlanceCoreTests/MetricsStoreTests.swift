@@ -6,7 +6,7 @@ private final class StubSystemSampler: SystemSampling {
     init(_ q: [SystemSnapshot]) { queue = q }
     func sample() -> SystemSnapshot {
         queue.isEmpty
-            ? SystemSnapshot(cpu: nil, memory: nil, network: nil, disk: nil, battery: nil, topByCPU: [], topByMemory: [])
+            ? SystemSnapshot(cpu: nil, memory: nil, network: nil, disk: nil, battery: nil, topByCPU: [], topMemoryApps: [])
             : queue.removeFirst()
     }
 }
@@ -15,7 +15,7 @@ final class MetricsStoreTests: XCTestCase {
     private func snap(cpu: Double) -> SystemSnapshot {
         SystemSnapshot(
             cpu: CPUSnapshot(totalUsage: cpu, user: cpu, system: 0, idle: 1 - cpu),
-            memory: nil, network: nil, disk: nil, battery: nil, topByCPU: [], topByMemory: [])
+            memory: nil, network: nil, disk: nil, battery: nil, topByCPU: [], topMemoryApps: [])
     }
 
     func testTickUpdatesSnapshotAndHistory() {

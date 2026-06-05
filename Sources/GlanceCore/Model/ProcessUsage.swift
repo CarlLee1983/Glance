@@ -4,9 +4,11 @@ public struct RawProcess: Equatable {
     public let name: String
     public let cpuTimeSeconds: Double
     public let memoryBytes: UInt64
-    public init(pid: Int32, name: String, cpuTimeSeconds: Double, memoryBytes: UInt64) {
+    public let executablePath: String?
+    public init(pid: Int32, name: String, cpuTimeSeconds: Double, memoryBytes: UInt64, executablePath: String? = nil) {
         self.pid = pid; self.name = name
         self.cpuTimeSeconds = cpuTimeSeconds; self.memoryBytes = memoryBytes
+        self.executablePath = executablePath
     }
 }
 

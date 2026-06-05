@@ -7,14 +7,14 @@ public struct SystemSnapshot {
     public let battery: BatterySnapshot?
     public let sensors: SensorSnapshot?
     public let topByCPU: [ProcessUsage]
-    public let topByMemory: [ProcessUsage]
+    public let topMemoryApps: [AppMemoryUsage]
 
     public init(cpu: CPUSnapshot?, memory: MemorySnapshot?, network: NetworkSnapshot?,
                 disk: DiskSnapshot?, battery: BatterySnapshot?,
                 sensors: SensorSnapshot? = nil,
-                topByCPU: [ProcessUsage], topByMemory: [ProcessUsage]) {
+                topByCPU: [ProcessUsage], topMemoryApps: [AppMemoryUsage]) {
         self.cpu = cpu; self.memory = memory; self.network = network
         self.disk = disk; self.battery = battery; self.sensors = sensors
-        self.topByCPU = topByCPU; self.topByMemory = topByMemory
+        self.topByCPU = topByCPU; self.topMemoryApps = topMemoryApps
     }
 }

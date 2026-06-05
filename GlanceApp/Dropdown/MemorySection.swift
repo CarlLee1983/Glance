@@ -4,7 +4,7 @@ import GlanceCore
 struct MemorySection: View {
     let snapshot: MemorySnapshot?
     let history: [Double]
-    let topProcesses: [ProcessUsage]
+    let topApps: [AppMemoryUsage]
 
     var body: some View {
         let usedFraction = snapshot?.usedFraction ?? 0
@@ -20,15 +20,10 @@ struct MemorySection: View {
                 .frame(height: 42)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
-            if topProcesses.isEmpty {
+            if topApps.isEmpty {
                 EmptyMetricLine(text: "暫無高記憶體程式")
             } else {
-                TopProcessList(
-                    processes: topProcesses,
-                    accent: .blue,
-                    relativeValue: { Double($0.memoryBytes) },
-                    valueText: { Formatters.bytes($0.memoryBytes) }
-                )
+                AppMemoryList(apps: topApps, accent: .blue)
             }
         }
     }

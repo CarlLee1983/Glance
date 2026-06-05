@@ -16,7 +16,7 @@ struct DropdownView: View {
                        topProcesses: s?.topByCPU ?? [])
             MemorySection(snapshot: s?.memory,
                           history: store.history.memory.elements,
-                          topProcesses: s?.topByMemory ?? [])
+                          topApps: s?.topMemoryApps ?? [])
             NetworkSection(snapshot: s?.network,
                            downHistory: store.history.netDown.elements)
             DiskSection(snapshot: s?.disk)

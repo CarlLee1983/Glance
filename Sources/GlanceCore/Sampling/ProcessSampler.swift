@@ -1,6 +1,7 @@
 import Foundation
 
-/// 以兩次取樣間各 pid 的 cpu 時間差 ÷ 牆鐘時間差,計算每個程式 CPU 佔比。
+/// 以兩次取樣間各 pid 的 cpu 時間差 ÷ 牆鐘時間差,計算每個程式 CPU 佔比;
+/// 記憶體則按所屬 app 彙總(含 helper 子行程)。
 public final class ProcessSampler {
     private let source: RawProcessSource
     private let clock: () -> TimeInterval
@@ -15,8 +16,8 @@ public final class ProcessSampler {
         self.limit = limit
     }
 
-    /// 一次列舉,同時回傳 CPU 與記憶體排行,避免重複 read()。
-    public func sample() -> (topCPU: [ProcessUsage], topMemory: [ProcessUsage]) {
+    /// 一次列舉,同時回傳 CPU(單行程)與記憶體(按 app 彙總)排行,避免重複 read()。
+    public func sample() -> (topCPU: [ProcessUsage], topMemoryApps: [AppMemoryUsage]) {
         guard let raws = source.read() else { return ([], []) }
         let t = clock()
         let cpuByPid = Dictionary(uniqueKeysWithValues: raws.map { ($0.pid, $0.cpuTimeSeconds) })
@@ -34,11 +35,35 @@ public final class ProcessSampler {
             return ProcessUsage(pid: p.pid, name: p.name, cpuFraction: fraction, memoryBytes: p.memoryBytes)
         }
         let topCPU = Array(usages.sorted { $0.cpuFraction > $1.cpuFraction }.prefix(limit))
-        let topMemory = Array(usages.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(limit))
-        return (topCPU, topMemory)
+        let topMemoryApps = Self.aggregateMemory(raws, limit: limit)
+        return (topCPU, topMemoryApps)
     }
 
     public func sampleTopByCPU() -> [ProcessUsage] { sample().topCPU }
 
-    public func sampleTopByMemory() -> [ProcessUsage] { sample().topMemory }
+    public func sampleTopMemoryApps() -> [AppMemoryUsage] { sample().topMemoryApps }
+
+    /// 按 app 鍵把各行程記憶體加總,由大到小排序取前 limit。
+    static func aggregateMemory(_ raws: [RawProcess], limit: Int) -> [AppMemoryUsage] {
+        var byKey: [String: (name: String, url: URL?, bytes: UInt64, count: Int)] = [:]
+        for p in raws {
+            let id = AppGrouping.identity(executablePath: p.executablePath, fallbackName: p.name)
+            if var entry = byKey[id.groupKey] {
+                entry.bytes += p.memoryBytes
+                entry.count += 1
+                byKey[id.groupKey] = entry
+            } else {
+                byKey[id.groupKey] = (id.appName, id.bundleURL, p.memoryBytes, 1)
+            }
+        }
+        let apps = byKey.map { key, v in
+            AppMemoryUsage(id: key, appName: v.name, bundleURL: v.url, memoryBytes: v.bytes, processCount: v.count)
+        }
+        let sorted = apps.sorted {
+            if $0.memoryBytes != $1.memoryBytes { return $0.memoryBytes > $1.memoryBytes }
+            if $0.appName != $1.appName { return $0.appName < $1.appName }
+            return $0.id < $1.id
+        }
+        return Array(sorted.prefix(limit))
+    }
 }

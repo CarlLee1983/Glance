@@ -39,6 +39,10 @@ public struct LibprocSource: RawProcessSource {
         let nameLen = proc_name(pid, &nameBuf, UInt32(nameBuf.count))
         let name = nameLen > 0 ? String(cString: nameBuf) : "pid \(pid)"
 
-        return RawProcess(pid: pid, name: name, cpuTimeSeconds: cpuSeconds, memoryBytes: memory)
+        var pathBuf = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+        let pathLen = proc_pidpath(pid, &pathBuf, UInt32(pathBuf.count))
+        let executablePath = pathLen > 0 ? String(cString: pathBuf) : nil
+
+        return RawProcess(pid: pid, name: name, cpuTimeSeconds: cpuSeconds, memoryBytes: memory, executablePath: executablePath)
     }
 }
