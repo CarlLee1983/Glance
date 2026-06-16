@@ -23,6 +23,8 @@ public enum UninstallSafety {
     }
 
     /// 共用:url 是否為某根目錄的「直接子項」(元件數正好多 1、前綴相符、非 symlink)。
+    /// 註:採「直接子項」語意(depth=1),root 與 target 之間無中間路徑段,故不存在
+    /// CleanupSafety 需處理的「中間目錄為 symlink」逃逸;leaf symlink 已於下方拒絕。
     private static func isDirectChild(
         _ url: URL,
         of roots: [URL],

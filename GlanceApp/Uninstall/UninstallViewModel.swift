@@ -119,6 +119,12 @@ final class UninstallViewModel: ObservableObject {
 
     func confirmUninstall() {
         guard phase == .confirming, let plan else { return }
+        // App 可能在預覽後才被啟動;移到垃圾桶前重新確認,執行中則退回預覽顯示警告。
+        guard !isRunning(plan.app.bundleID) else {
+            selectedAppRunning = true
+            phase = .preview
+            return
+        }
         runTask?.cancel()
         generation += 1
         let generation = generation

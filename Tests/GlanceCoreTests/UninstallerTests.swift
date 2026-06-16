@@ -109,4 +109,26 @@ final class UninstallerTests: XCTestCase {
         XCTAssertEqual(result.trashedCount, 1)  // related 成功
         XCTAssertEqual(result.skippedCount, 1)  // app 失敗
     }
+
+    func testMaliciousAppBundleOutsideAppsDirIsBlocked() async throws {
+        let apps = try makeTempDir("apps")
+        let support = try makeTempDir("support")
+        let outside = try makeTempDir("outside")
+        let trash = try makeTempDir("trash")
+
+        let evilApp = outside.appendingPathComponent("Evil.app", isDirectory: true)
+        try FileManager.default.createDirectory(at: evilApp, withIntermediateDirectories: true)
+
+        let plan = UninstallPlan(
+            app: InstalledApp(bundleID: "com.evil.App", name: "Evil", bundleURL: evilApp, sizeBytes: 0),
+            relatedFiles: []
+        )
+        let result = await Uninstaller(trash: fakeTrash(into: trash)).run(
+            plan: plan, appsDirectories: [apps], supportDirectories: [support]
+        )
+
+        XCTAssertEqual(result.trashedCount, 0)
+        XCTAssertEqual(result.skippedCount, 1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: evilApp.path))  // 範圍外 app 未被動到
+    }
 }
