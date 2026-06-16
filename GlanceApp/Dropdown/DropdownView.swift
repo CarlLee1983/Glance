@@ -12,6 +12,10 @@ struct DropdownView: View {
             header(snapshot: s)
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
+                .padding(.bottom, 8)
+
+            HealthBanner(snapshot: s)
+                .padding(.horizontal, 12)
                 .padding(.bottom, 10)
 
             ScrollView(.vertical, showsIndicators: true) {
