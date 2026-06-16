@@ -15,7 +15,7 @@ struct NetworkSection: View {
             status: nil
         ) {
             Sparkline(values: downHistory, maxValue: nil, color: .orange)
-                .frame(height: 42)
+                .frame(height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }

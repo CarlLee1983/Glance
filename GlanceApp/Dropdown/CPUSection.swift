@@ -17,7 +17,7 @@ struct CPUSection: View {
             status: MetricStatus.load(fraction: usage)
         ) {
             Sparkline(values: history, maxValue: 1, color: .green)
-                .frame(height: 42)
+                .frame(height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             if topProcesses.isEmpty {
