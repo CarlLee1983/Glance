@@ -83,6 +83,7 @@ struct SettingsView: View {
         case .memory:  return "記憶體"
         case .network: return "網路"
         case .disk:    return "磁碟"
+        case .diskIO:  return "磁碟讀寫"
         case .battery: return "電池"
         case .cpuTemp: return "CPU 溫度"
         case .power:   return "功耗"
