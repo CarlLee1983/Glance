@@ -17,6 +17,10 @@ struct GlanceApp: App {
             DiskSpaceAnalyzerWindow()
         }
 
+        Window("清理", id: "cleanup") {
+            CleanupView()
+        }
+
         Settings {
             SettingsView()
         }

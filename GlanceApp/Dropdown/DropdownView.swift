@@ -5,6 +5,7 @@ import GlanceCore
 struct DropdownView: View {
     @ObservedObject var store: MetricsStore
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let s = store.snapshot
@@ -85,6 +86,25 @@ struct DropdownView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
 
+            Button {
+                openCleanupWindow()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("清理")
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+
             Spacer()
 
             Button {
@@ -116,6 +136,13 @@ struct DropdownView: View {
             NSApplication.shared.windows
                 .filter { $0.isVisible && $0.canBecomeKey }
                 .forEach { $0.orderFrontRegardless() }
+        }
+    }
+
+    private func openCleanupWindow() {
+        openWindow(id: "cleanup")
+        DispatchQueue.main.async {
+            NSApplication.shared.activate(ignoringOtherApps: true)
         }
     }
 
