@@ -25,6 +25,8 @@ struct Sparkline: View {
 
                     // 2. 平滑描邊折線:有 bandColors 則逐段著色,否則單色。
                     if let bands = bandColors, bands.count == values.count {
+                        // pts 與 values 一對一對應(count >= 2 時 pts.count == values.count),
+                        // 故此 guard 同時保證 bands.count == pts.count,下方索引皆安全。
                         ForEach(0..<(pts.count - 1), id: \.self) { i in
                             segmentPath(from: pts[i], to: pts[i + 1])
                                 .stroke(
