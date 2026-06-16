@@ -34,7 +34,7 @@ struct MemorySection: View {
                 AppMemoryList(apps: topApps, accent: .blue)
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .combine)  // 卡片合為單一元素;app 清單屬裝飾性細節,不需個別聚焦
         .accessibilityLabel(accessibilityLabel)
     }
 
