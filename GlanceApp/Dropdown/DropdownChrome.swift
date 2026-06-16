@@ -8,6 +8,7 @@ struct MetricCard<Content: View>: View {
     let value: String
     let detail: String
     let status: MetricStatus?
+    var valueColor: Color? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -50,6 +51,7 @@ struct MetricCard<Content: View>: View {
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
+                    .foregroundStyle(valueColor ?? .primary)
             }
 
             content
