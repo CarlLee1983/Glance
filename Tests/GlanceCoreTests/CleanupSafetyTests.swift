@@ -22,3 +22,61 @@ final class CleanupCategoryTests: XCTestCase {
                         "/Users/tester/.cache"])
     }
 }
+
+final class CleanupSafetyTests: XCTestCase {
+    private var roots: [URL] = []
+
+    override func tearDownWithError() throws {
+        for root in roots { try? FileManager.default.removeItem(at: root) }
+        roots.removeAll()
+        try super.tearDownWithError()
+    }
+
+    func testChildUnderRootIsDeletable() throws {
+        let root = try makeTempRoot()
+        let child = root.appendingPathComponent("cache.dat")
+        XCTAssertTrue(CleanupSafety.isDeletable(child, within: [root]))
+    }
+
+    func testRootItselfIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        XCTAssertFalse(CleanupSafety.isDeletable(root, within: [root]))
+    }
+
+    func testPathOutsideRootIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        let stray = outside.appendingPathComponent("doc.txt")
+        XCTAssertFalse(CleanupSafety.isDeletable(stray, within: [root]))
+    }
+
+    func testSiblingWithSharedPrefixIsNotDeletable() throws {
+        // root 為 ".../Caches";".../Caches2/x" 不該被誤判為在 root 底下。
+        let base = try makeTempRoot()
+        let root = base.appendingPathComponent("Caches", isDirectory: true)
+        let sibling = base.appendingPathComponent("Caches2/x")
+        XCTAssertFalse(CleanupSafety.isDeletable(sibling, within: [root]))
+    }
+
+    func testParentTraversalIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let escaping = root.appendingPathComponent("../escape.dat")
+        XCTAssertFalse(CleanupSafety.isDeletable(escaping, within: [root]))
+    }
+
+    func testSymbolicLinkIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        let link = root.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        XCTAssertFalse(CleanupSafety.isDeletable(link, within: [root]))
+    }
+
+    private func makeTempRoot() throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlanceCleanupSafetyTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        roots.append(root)
+        return root
+    }
+}
