@@ -20,6 +20,8 @@ public struct IOBlockStorageIOSource: DiskIOStatsSource {
         var service = IOIteratorNext(iterator)
         while service != 0 {
             if let stats = statistics(of: service) {
+                // 鍵名對應 IOBlockStorageDriver.h 的 kIOBlockStorageDriverStatisticsBytesRead/WriteKey
+                // (IOKit 字串常數,非公開匯出,故以字面值取值;缺鍵則該磁碟略過)。
                 if let r = (stats["Bytes (Read)"] as? NSNumber)?.uint64Value {
                     totalRead += r; found = true
                 }
