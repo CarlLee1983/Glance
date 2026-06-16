@@ -30,7 +30,7 @@ struct DropdownView: View {
                                   topApps: s?.topMemoryApps ?? [])
                     NetworkSection(snapshot: s?.network,
                                    downHistory: store.history.netDown.elements)
-                    DiskSection(snapshot: s?.disk)
+                    DiskSection(snapshot: s?.disk, io: s?.diskIO)
                     if let b = s?.battery, b.isPresent {
                         BatterySection(snapshot: b)
                     }
