@@ -13,11 +13,17 @@ struct Sparkline: View {
             let pts = points(in: geo.size)
             ZStack {
                 if pts.count > 1 {
-                    // 1. 漸層區域填色 (平滑閉合曲線)
+                    // 1. 漸層區域填色:band 模式下用最新樣本的壓力色,否則用單色 color。
+                    let fillColor: Color = {
+                        if let bands = bandColors, bands.count == values.count, let last = bands.last {
+                            return last
+                        }
+                        return color
+                    }()
                     smoothedAreaPath(points: pts, height: geo.size.height)
                         .fill(
                             LinearGradient(
-                                colors: [color.opacity(0.22), color.opacity(0.01)],
+                                colors: [fillColor.opacity(0.22), fillColor.opacity(0.01)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )

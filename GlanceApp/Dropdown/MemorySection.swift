@@ -16,7 +16,7 @@ struct MemorySection: View {
             accent: .blue,
             value: Formatters.percent(usedFraction),
             detail: memoryDetail,
-            status: nil,
+            status: nil,  // 壓力色(valueColor)與壓力副標已涵蓋狀態,故不顯示容量徽章
             valueColor: PressureColor.color(for: pressure)
         ) {
             Sparkline(
