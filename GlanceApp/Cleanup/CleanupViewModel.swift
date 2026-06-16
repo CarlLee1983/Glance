@@ -29,6 +29,7 @@ final class CleanupViewModel: ObservableObject {
     private let executor: CleanupExecutor
     private var scanTask: Task<Void, Never>?
     private var runTask: Task<Void, Never>?
+    private var generation = 0
 
     init(
         categories: [CleanupCategory] = CleanupCategory.defaults(),
@@ -57,15 +58,17 @@ final class CleanupViewModel: ObservableObject {
 
     func startScan() {
         scanTask?.cancel()
+        generation += 1
+        let generation = generation
         phase = .scanning
         rows = []
         currentPath = nil
         let categories = categories
         scanTask = Task { [weak self, scanner] in
             let results = await scanner.scan(categories: categories) { [weak self] progress in
-                await self?.applyScanProgress(progress)
+                await self?.applyScanProgress(progress, generation: generation)
             }
-            await self?.applyScanResults(results)
+            await self?.applyScanResults(results, generation: generation)
         }
     }
 
@@ -75,7 +78,7 @@ final class CleanupViewModel: ObservableObject {
     }
 
     func requestConfirmation() {
-        guard hasSelection else { return }
+        guard phase == .selecting, hasSelection else { return }
         phase = .confirming
     }
 
@@ -84,26 +87,30 @@ final class CleanupViewModel: ObservableObject {
     }
 
     func confirmDelete() {
+        guard phase == .confirming else { return }
         runTask?.cancel()
+        generation += 1
+        let generation = generation
         phase = .running
         currentPath = nil
         let targets = selectedCategories
         runTask = Task { [weak self, executor] in
             let result = await executor.run(categories: targets) { [weak self] progress in
-                await self?.applyRunProgress(progress)
+                await self?.applyRunProgress(progress, generation: generation)
             }
-            await self?.applyRunResult(result)
+            await self?.applyRunResult(result, generation: generation)
         }
     }
 
     // MARK: Apply (MainActor)
 
-    private func applyScanProgress(_ progress: CleanupScanProgress) {
-        guard phase == .scanning else { return }
+    private func applyScanProgress(_ progress: CleanupScanProgress, generation: Int) {
+        guard generation == self.generation, phase == .scanning else { return }
         currentPath = progress.currentPath
     }
 
-    private func applyScanResults(_ results: [CleanupCategoryResult]) {
+    private func applyScanResults(_ results: [CleanupCategoryResult], generation: Int) {
+        guard generation == self.generation else { return }
         rows = categories.compactMap { category in
             guard let result = results.first(where: { $0.id == category.id }) else { return nil }
             // 預設勾選有可回收項目的類別。
@@ -114,12 +121,13 @@ final class CleanupViewModel: ObservableObject {
         scanTask = nil
     }
 
-    private func applyRunProgress(_ progress: CleanupRunProgress) {
-        guard phase == .running else { return }
+    private func applyRunProgress(_ progress: CleanupRunProgress, generation: Int) {
+        guard generation == self.generation, phase == .running else { return }
         currentPath = progress.currentPath
     }
 
-    private func applyRunResult(_ result: CleanupRunResult) {
+    private func applyRunResult(_ result: CleanupRunResult, generation: Int) {
+        guard generation == self.generation else { return }
         runResult = result
         currentPath = nil
         phase = .done
