@@ -8,7 +8,7 @@ final class CleanupCategoryTests: XCTestCase {
 
         XCTAssertEqual(categories.map(\.id), [.trash, .userCaches, .devCaches])
 
-        let trash = try? XCTUnwrap(categories.first { $0.id == .trash })
+        let trash = categories.first { $0.id == .trash }
         XCTAssertEqual(trash?.roots.map(\.path), ["/Users/tester/.Trash"])
 
         let userCaches = categories.first { $0.id == .userCaches }
