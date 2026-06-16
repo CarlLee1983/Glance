@@ -4,12 +4,14 @@ public struct MetricHistory {
     public private(set) var memory: RingBuffer<Double>
     public private(set) var netDown: RingBuffer<Double>
     public private(set) var netUp: RingBuffer<Double>
+    public private(set) var memoryPressure: RingBuffer<Double>
 
     public init(capacity: Int = 90) {
         cpu = RingBuffer(capacity: capacity)
         memory = RingBuffer(capacity: capacity)
         netDown = RingBuffer(capacity: capacity)
         netUp = RingBuffer(capacity: capacity)
+        memoryPressure = RingBuffer(capacity: capacity)
     }
 
     public mutating func record(_ snapshot: SystemSnapshot) {
@@ -17,5 +19,6 @@ public struct MetricHistory {
         memory.append(snapshot.memory?.usedFraction ?? 0)
         netDown.append(snapshot.network?.downBytesPerSec ?? 0)
         netUp.append(snapshot.network?.upBytesPerSec ?? 0)
+        memoryPressure.append(Double(snapshot.memory?.pressure.level ?? 0))
     }
 }
