@@ -82,6 +82,27 @@ final class CleanupSafetyTests: XCTestCase {
         XCTAssertFalse(CleanupSafety.isDeletable(escaping, within: [root]))
     }
 
+    func testMultiLevelNonexistentTailViaSymlinkIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        let link = root.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        // 多層不存在尾段:walk 到最深存在祖先(link)解析後仍應落在 root 之外。
+        let escaping = link.appendingPathComponent("a/b/c.dat")
+        XCTAssertFalse(CleanupSafety.isDeletable(escaping, within: [root]))
+    }
+
+    func testExistingFileViaIntermediateSymlinkIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        try Data(repeating: 0x7A, count: 8).write(to: outside.appendingPathComponent("real.dat"))
+        let link = root.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        // 整條路徑都存在:resolvingSymlinksInPath 直接解析整段,實為 outside/real.dat。
+        let viaLink = link.appendingPathComponent("real.dat")
+        XCTAssertFalse(CleanupSafety.isDeletable(viaLink, within: [root]))
+    }
+
     func testEmptyRootsIsNotDeletable() throws {
         let root = try makeTempRoot()
         let child = root.appendingPathComponent("cache.dat")
