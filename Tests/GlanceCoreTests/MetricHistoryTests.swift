@@ -2,12 +2,14 @@ import XCTest
 @testable import GlanceCore
 
 final class MetricHistoryTests: XCTestCase {
-    private func snapshot(cpu: Double, mem: Double, down: Double, up: Double, pressure: MemoryPressure = .normal) -> SystemSnapshot {
+    private func snapshot(cpu: Double, mem: Double, down: Double, up: Double,
+                          pressure: MemoryPressure = .normal,
+                          diskIO: DiskIOSnapshot? = nil) -> SystemSnapshot {
         SystemSnapshot(
             cpu: CPUSnapshot(totalUsage: cpu, user: cpu, system: 0, idle: 1 - cpu),
             memory: MemorySnapshot(usedBytes: UInt64(mem * 100), totalBytes: 100, swapUsedBytes: 0, pressure: pressure),
             network: NetworkSnapshot(downBytesPerSec: down, upBytesPerSec: up, totalDownBytes: 0, totalUpBytes: 0),
-            disk: nil, battery: nil, topByCPU: [], topMemoryApps: [])
+            disk: nil, diskIO: diskIO, battery: nil, topByCPU: [], topMemoryApps: [])
     }
 
     func testRecordAppendsPerMetric() {
@@ -50,5 +52,22 @@ final class MetricHistoryTests: XCTestCase {
         let empty = SystemSnapshot(cpu: nil, memory: nil, network: nil, disk: nil, battery: nil, topByCPU: [], topMemoryApps: [])
         h.record(empty)
         XCTAssertEqual(h.memoryPressure.elements, [0])
+    }
+
+    func testRecordsDiskIORates() {
+        var h = MetricHistory(capacity: 5)
+        h.record(snapshot(cpu: 0, mem: 0, down: 0, up: 0,
+                          diskIO: DiskIOSnapshot(readBytesPerSec: 1000, writeBytesPerSec: 200)))
+        h.record(snapshot(cpu: 0, mem: 0, down: 0, up: 0,
+                          diskIO: DiskIOSnapshot(readBytesPerSec: 3000, writeBytesPerSec: 400)))
+        XCTAssertEqual(h.diskRead.elements, [1000, 3000])
+        XCTAssertEqual(h.diskWrite.elements, [200, 400])
+    }
+
+    func testMissingDiskIORecordsZero() {
+        var h = MetricHistory(capacity: 5)
+        h.record(snapshot(cpu: 0, mem: 0, down: 0, up: 0, diskIO: nil))
+        XCTAssertEqual(h.diskRead.elements, [0])
+        XCTAssertEqual(h.diskWrite.elements, [0])
     }
 }

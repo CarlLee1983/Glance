@@ -8,6 +8,7 @@ enum MenuBarSegmentIcon {
         case .memory:  return "memorychip"
         case .network: return "arrow.down"
         case .disk:    return "internaldrive"
+        case .diskIO:  return "arrow.up"
         case .battery: return "battery.100"
         case .cpuTemp: return "thermometer.medium"
         case .power:   return "bolt"
