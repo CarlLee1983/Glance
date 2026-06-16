@@ -48,7 +48,63 @@ final class CleanupExecutorTests: XCTestCase {
         XCTAssertEqual(trash.deletedCount, 1)                 // 只刪 real.dat
         XCTAssertEqual(trash.reclaimedBytes, 10)
         XCTAssertEqual(result.skippedPaths.count, 1)          // symlink 進 skipped
-        XCTAssertEqual(result.skippedPaths.first?.url, link)
+        XCTAssertEqual(result.skippedPaths.first?.url.lastPathComponent, "evil-link")
+    }
+
+    func testRoguePathOutsideRootIsBlockedBySafetyGuard() async throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        let rogue = outside.appendingPathComponent("rogue.dat")
+        try writeFile(rogue, byteCount: 77)
+
+        // 模擬列舉回傳一個位於 root 之外的項目:護欄必須擋下,不得刪除。
+        let stub = StubFileManager()
+        stub.entriesForRoot[root] = [rogue]
+
+        let categories = [CleanupCategory(id: .trash, displayName: "垃圾桶", roots: [root])]
+        let result = await CleanupExecutor(fileManager: stub).run(categories: categories)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: rogue.path)) // 外部檔案存活
+        let trash = try XCTUnwrap(result.categories.first)
+        XCTAssertEqual(trash.deletedCount, 0)
+        XCTAssertEqual(trash.reclaimedBytes, 0)
+        XCTAssertEqual(result.skippedPaths.count, 1)
+        XCTAssertEqual(result.skippedPaths.first?.reason, "Blocked by safety guard")
+    }
+
+    func testDeleteFailureIsSkippedAndBatchContinues() async throws {
+        let root = try makeTempRoot()
+        try writeFile(root.appendingPathComponent("a.dat"), byteCount: 30)
+        try writeFile(root.appendingPathComponent("b.dat"), byteCount: 40)
+
+        let stub = StubFileManager()
+        stub.throwOnRemove = true
+
+        let categories = [CleanupCategory(id: .userCaches, displayName: "使用者快取與日誌", roots: [root])]
+        let result = await CleanupExecutor(fileManager: stub).run(categories: categories)
+
+        let caches = try XCTUnwrap(result.categories.first)
+        XCTAssertEqual(caches.deletedCount, 0)
+        XCTAssertEqual(caches.reclaimedBytes, 0)
+        XCTAssertEqual(result.skippedPaths.count, 2) // 兩個都失敗、都進 skipped,未中斷
+        XCTAssertTrue(result.skippedPaths.allSatisfy { $0.reason.hasPrefix("Delete failed:") })
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent("a.dat").path))
+    }
+
+    func testDeletesAcrossMultipleRoots() async throws {
+        let rootA = try makeTempRoot()
+        let rootB = try makeTempRoot()
+        try writeFile(rootA.appendingPathComponent("x.dat"), byteCount: 11)
+        try writeFile(rootB.appendingPathComponent("y.dat"), byteCount: 22)
+
+        let categories = [CleanupCategory(id: .devCaches, displayName: "開發工具快取", roots: [rootA, rootB])]
+        let result = await CleanupExecutor().run(categories: categories)
+
+        let dev = try XCTUnwrap(result.categories.first)
+        XCTAssertEqual(dev.deletedCount, 2)
+        XCTAssertEqual(dev.reclaimedBytes, 33)
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: rootA.path).isEmpty)
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: rootB.path).isEmpty)
     }
 
     func testEmptyCategoryYieldsZeroResult() async throws {
@@ -72,5 +128,24 @@ final class CleanupExecutorTests: XCTestCase {
 
     private func writeFile(_ url: URL, byteCount: Int) throws {
         try Data(repeating: 0x7A, count: byteCount).write(to: url)
+    }
+}
+
+private final class StubFileManager: FileManager {
+    var entriesForRoot: [URL: [URL]] = [:]
+    var throwOnRemove = false
+
+    override func contentsOfDirectory(
+        at url: URL,
+        includingPropertiesForKeys keys: [URLResourceKey]?,
+        options mask: FileManager.DirectoryEnumerationOptions = []
+    ) throws -> [URL] {
+        if let entries = entriesForRoot[url] { return entries }
+        return try super.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: mask)
+    }
+
+    override func removeItem(at url: URL) throws {
+        if throwOnRemove { throw CocoaError(.fileWriteNoPermission) }
+        try super.removeItem(at: url)
     }
 }
