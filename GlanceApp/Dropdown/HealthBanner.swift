@@ -2,7 +2,7 @@ import SwiftUI
 import GlanceCore
 
 /// 下拉頂端的系統健康橫幅:彩色圓點 + 標籤 + 大號分數。
-/// snapshot == nil(尚未取樣)時顯示灰色「—」。
+/// snapshot == nil(尚未取樣)時為灰色,標籤顯示「尚未取樣」、分數顯示「—」。
 struct HealthBanner: View {
     let snapshot: SystemSnapshot?
 

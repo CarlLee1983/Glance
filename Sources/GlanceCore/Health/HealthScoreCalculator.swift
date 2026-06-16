@@ -43,7 +43,7 @@ public enum HealthScoreCalculator {
         }
 
         let clamped = Int(max(0, min(100, score)).rounded())
-        return HealthScore(value: clamped, band: HealthBand.from(score: clamped))
+        return HealthScore(value: clamped)
     }
 
     // mole CPU:超過 high 用全權重 * (u-normal)/high;否則半權重線性內插。

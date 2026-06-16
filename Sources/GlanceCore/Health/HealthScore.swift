@@ -1,11 +1,10 @@
-/// 系統健康分數結果:0...100 分與對應分段。
+/// 系統健康分數結果:0...100 分。分段由分數導出,避免兩者不一致。
 public struct HealthScore: Equatable {
     public let value: Int          // 0...100
-    public let band: HealthBand
+    public var band: HealthBand { HealthBand.from(score: value) }
 
-    public init(value: Int, band: HealthBand) {
+    public init(value: Int) {
         self.value = value
-        self.band = band
     }
 }
 
