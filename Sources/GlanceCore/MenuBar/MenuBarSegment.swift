@@ -1,6 +1,6 @@
 /// 選單列上可顯示的欄位。allCases 的順序即為預設顯示順序。
 public enum MenuBarSegment: String, CaseIterable, Codable {
-    case cpu, memory, network, disk, battery, cpuTemp, power
+    case cpu, memory, network, disk, diskIO, battery, cpuTemp, power
 }
 
 /// 選單列呈現模式。
@@ -60,6 +60,14 @@ public enum MenuBarText {
                         segment: .disk,
                         value: Formatters.percent(d.usedFraction),
                         status: MetricStatus.capacity(fraction: d.usedFraction)
+                    ))
+                }
+            case .diskIO:
+                if let io = snapshot.diskIO {
+                    result.append(SegmentReading(
+                        segment: .diskIO,
+                        value: Formatters.rateCompact(io.writeBytesPerSec),
+                        status: .normal
                     ))
                 }
             case .battery:

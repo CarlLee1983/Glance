@@ -7,6 +7,7 @@ final class MenuBarTextTests: XCTestCase {
         memoryUsedFraction: Double = 0.61,
         networkDownBytesPerSec: Double = 2_202_009,
         disk: DiskSnapshot? = nil,
+        diskIO: DiskIOSnapshot? = nil,
         battery: BatteryStats? = nil,
         sensors: SensorSnapshot? = nil
     ) -> SystemSnapshot {
@@ -25,6 +26,7 @@ final class MenuBarTextTests: XCTestCase {
                 totalUpBytes: 0
             ),
             disk: disk,
+            diskIO: diskIO,
             battery: battery,
             sensors: sensors,
             topByCPU: [],
@@ -109,6 +111,19 @@ final class MenuBarTextTests: XCTestCase {
 
     func testSensorSegmentsSkippedWhenMissing() {
         let readings = MenuBarText.readings(snapshot: makeSnapshot(), segments: [.cpuTemp, .power])
+        XCTAssertEqual(readings, [])
+    }
+
+    func testDiskIOReadingShowsWriteRate() {
+        let snapshot = makeSnapshot(diskIO: DiskIOSnapshot(readBytesPerSec: 300_000, writeBytesPerSec: 1_258_291))
+        let readings = MenuBarText.readings(snapshot: snapshot, segments: [.diskIO])
+        XCTAssertEqual(readings, [
+            SegmentReading(segment: .diskIO, value: "1.2M", status: .normal),
+        ])
+    }
+
+    func testDiskIOReadingSkippedWhenAbsent() {
+        let readings = MenuBarText.readings(snapshot: makeSnapshot(diskIO: nil), segments: [.diskIO])
         XCTAssertEqual(readings, [])
     }
 }
