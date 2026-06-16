@@ -83,7 +83,7 @@ ZStack {
 - 全為 0(剛啟動/取樣失敗)時 `ioMax = 1`,兩線貼底,無除零。
 
 `GlanceApp/Dropdown/DropdownView.swift`:呼叫 `DiskSection` 時多傳
-`readHistory: store.history.diskRead.values`、`writeHistory: store.history.diskWrite.values`
+`readHistory: store.history.diskRead.elements`、`writeHistory: store.history.diskWrite.elements`
 (鏡像 `downHistory` 的傳法)。
 
 既有「↑寫 X/s · ↓讀 Y/s」文字行保留,與曲線並存(文字給精確值、曲線給趨勢)。
@@ -92,7 +92,7 @@ ZStack {
 
 `SystemSampler.sample()` → `SystemSnapshot.diskIO`(已落地)
 → `MetricsStore.apply()` 同時 `snapshot = snap` 與 `history.record(snap)`(`diskRead`/`diskWrite` 各推一筆)
-→ SwiftUI 觀察:`DiskSection` 讀 `store.history.diskRead/diskWrite.values` 畫雙線;`MenuBarText.readings` 讀 `snapshot.diskIO` 出選單列寫入速率。
+→ SwiftUI 觀察:`DiskSection` 讀 `store.history.diskRead/diskWrite.elements` 畫雙線;`MenuBarText.readings` 讀 `snapshot.diskIO` 出選單列寫入速率。
 
 ## 錯誤處理與故障隔離
 
