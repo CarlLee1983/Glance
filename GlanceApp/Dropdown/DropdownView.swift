@@ -105,6 +105,25 @@ struct DropdownView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
 
+            Button {
+                openUninstallWindow()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash.slash")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("解除安裝")
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+
             Spacer()
 
             Button {
@@ -141,6 +160,13 @@ struct DropdownView: View {
 
     private func openCleanupWindow() {
         openWindow(id: "cleanup")
+        DispatchQueue.main.async {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        }
+    }
+
+    private func openUninstallWindow() {
+        openWindow(id: "uninstall")
         DispatchQueue.main.async {
             NSApplication.shared.activate(ignoringOtherApps: true)
         }

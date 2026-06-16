@@ -21,6 +21,10 @@ struct GlanceApp: App {
             CleanupView()
         }
 
+        Window("解除安裝", id: "uninstall") {
+            UninstallView()
+        }
+
         Settings {
             SettingsView()
         }
