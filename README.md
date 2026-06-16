@@ -42,7 +42,7 @@ CPU        25%
     xcodegen generate          # 由 project.yml 產生 Glance.xcodeproj
     xcodebuild -project Glance.xcodeproj -scheme Glance -destination 'platform=macOS' build
 
-建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池/感測器 區塊(CPU/記憶體含歷史曲線與 Top 程式)。下拉內可開「設定…」:
+建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池/感測器 區塊(CPU/記憶體含歷史曲線與 Top 程式;磁碟卡片含容量與即時讀/寫速率)。下拉內可開「設定…」:
 
 - **登入時啟動 Glance**(`SMAppService`)
 - **更新頻率**(1~5 秒)
@@ -117,4 +117,4 @@ CPU        25%
 
 ## 不在 v1 範圍
 
-公證、磁碟即時讀寫量——架構已預留,日後再加。
+公證——架構已預留,日後再加。
