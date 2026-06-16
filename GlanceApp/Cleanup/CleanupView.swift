@@ -1,9 +1,9 @@
-import AppKit
 import SwiftUI
 import GlanceCore
 
 struct CleanupView: View {
     @StateObject private var viewModel = CleanupViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     private let homePath = FileManager.default.homeDirectoryForCurrentUser.path
 
@@ -200,7 +200,7 @@ struct CleanupView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
-            Button("完成") { dismissWindow() }
+            Button("完成") { dismiss() }
                 .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -212,9 +212,5 @@ struct CleanupView: View {
         category.roots
             .map { $0.path.replacingOccurrences(of: homePath, with: "~") }
             .joined(separator: "、")
-    }
-
-    private func dismissWindow() {
-        NSApplication.shared.keyWindow?.close()
     }
 }

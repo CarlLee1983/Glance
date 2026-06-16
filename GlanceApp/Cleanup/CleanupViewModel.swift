@@ -83,6 +83,7 @@ final class CleanupViewModel: ObservableObject {
     }
 
     func cancelConfirmation() {
+        guard phase == .confirming else { return }
         phase = .selecting
     }
 
