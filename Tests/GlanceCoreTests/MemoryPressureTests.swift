@@ -21,4 +21,16 @@ final class MemoryPressureTests: XCTestCase {
     func testNormalWhenTotalZero() {
         XCTAssertEqual(MemoryPressure.evaluate(usedBytes: 0, totalBytes: 0, swapUsedBytes: 0), .normal)
     }
+
+    func testLevelOrdinal() {
+        XCTAssertEqual(MemoryPressure.normal.level, 0)
+        XCTAssertEqual(MemoryPressure.warning.level, 1)
+        XCTAssertEqual(MemoryPressure.critical.level, 2)
+    }
+
+    func testDisplayLabel() {
+        XCTAssertEqual(MemoryPressure.normal.displayLabel, "正常")
+        XCTAssertEqual(MemoryPressure.warning.displayLabel, "警告")
+        XCTAssertEqual(MemoryPressure.critical.displayLabel, "嚴重")
+    }
 }

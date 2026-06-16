@@ -42,4 +42,22 @@ extension MemoryPressure {
         if usedFraction > 0.75 { return .warning }
         return .normal
     }
+
+    /// 歷史編碼與分段著色用序數:normal=0 / warning=1 / critical=2。
+    public var level: Int {
+        switch self {
+        case .normal: return 0
+        case .warning: return 1
+        case .critical: return 2
+        }
+    }
+
+    /// 下拉副標顯示字串。
+    public var displayLabel: String {
+        switch self {
+        case .normal: return "正常"
+        case .warning: return "警告"
+        case .critical: return "嚴重"
+        }
+    }
 }
