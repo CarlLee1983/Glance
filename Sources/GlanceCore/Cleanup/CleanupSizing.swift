@@ -7,6 +7,8 @@ enum CleanupSizing {
     }
 
     /// 遞迴計算 url 佔用位元組;符號連結回 0(不跟隨);不可讀目錄回 0。
+    /// 註:跳過符號連結正是遞迴的防環機制(macOS 不允許硬連結目錄,目錄環只能經 symlink 形成);
+    /// 若日後改為跟隨 symlink,務必加入 visited 集合或深度上限,否則可能無限遞迴。
     static func size(of url: URL, fileManager: FileManager) -> UInt64 {
         if isSymbolicLink(url, fileManager: fileManager) { return 0 }
 
