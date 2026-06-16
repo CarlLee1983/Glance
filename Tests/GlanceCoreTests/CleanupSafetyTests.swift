@@ -72,6 +72,29 @@ final class CleanupSafetyTests: XCTestCase {
         XCTAssertFalse(CleanupSafety.isDeletable(link, within: [root]))
     }
 
+    func testIntermediateSymlinkEscapeIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let outside = try makeTempRoot()
+        let link = root.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        // link/secret.dat 經解析後實為 outside/secret.dat,落在 root 之外。
+        let escaping = link.appendingPathComponent("secret.dat")
+        XCTAssertFalse(CleanupSafety.isDeletable(escaping, within: [root]))
+    }
+
+    func testEmptyRootsIsNotDeletable() throws {
+        let root = try makeTempRoot()
+        let child = root.appendingPathComponent("cache.dat")
+        XCTAssertFalse(CleanupSafety.isDeletable(child, within: []))
+    }
+
+    func testMatchesAgainstSecondRoot() throws {
+        let first = try makeTempRoot()
+        let second = try makeTempRoot()
+        let child = second.appendingPathComponent("cache.dat")
+        XCTAssertTrue(CleanupSafety.isDeletable(child, within: [first, second]))
+    }
+
     private func makeTempRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GlanceCleanupSafetyTests-\(UUID().uuidString)", isDirectory: true)
