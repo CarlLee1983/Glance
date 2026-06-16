@@ -42,12 +42,12 @@ CPU        25%
     xcodegen generate          # 由 project.yml 產生 Glance.xcodeproj
     xcodebuild -project Glance.xcodeproj -scheme Glance -destination 'platform=macOS' build
 
-建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池/感測器 區塊(CPU/記憶體含歷史曲線與 Top 程式;磁碟卡片含容量與即時讀/寫速率)。下拉內可開「設定…」:
+建置後於產物路徑 `open Glance.app` 即在選單列常駐。點開有 CPU/記憶體/網路/磁碟/電池/感測器 區塊(CPU/記憶體含歷史曲線與 Top 程式;磁碟卡片含容量、即時讀/寫速率與讀寫歷史曲線)。下拉內可開「設定…」:
 
 - **登入時啟動 Glance**(`SMAppService`)
 - **更新頻率**(1~5 秒)
 - **選單列樣式**:圖示+數值 / 僅圖示(瀏海機型建議「僅圖示」最省寬度)
-- **選單列欄位**:CPU/記憶體/網路/磁碟/電池/CPU 溫度/功耗,可勾選並拖曳調整顯示順序
+- **選單列欄位**:CPU/記憶體/網路/磁碟/磁碟讀寫/電池/CPU 溫度/功耗,可勾選並拖曳調整顯示順序
 - **磁碟空間分析**: 磁碟區塊可開啟唯讀分析視窗,按需掃描家目錄並列出最大資料夾與最大檔案;第一版只提供 Finder 中顯示,不刪除或移動檔案。
 
 ### 系統健康評分
