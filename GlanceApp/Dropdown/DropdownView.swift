@@ -48,7 +48,7 @@ struct DropdownView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
         }
-        .frame(width: 340)
+        .frame(width: 440)
         .background(.regularMaterial)
     }
 
@@ -123,7 +123,7 @@ struct DropdownView: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Glance")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
                 Text(snapshot == nil ? "等待第一次取樣" : "即時系統狀態")
                     .font(.system(size: 11))
@@ -144,14 +144,14 @@ struct DropdownView: View {
     private func summaryPill(_ title: String, value: String) -> some View {
         VStack(spacing: 1) {
             Text(title)
-                .font(.system(size: 9, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.primary)
         }
-        .frame(width: 48, height: 32)
+        .frame(width: 56, height: 36)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.primary.opacity(0.03))

@@ -17,7 +17,7 @@ struct MemorySection: View {
             status: MetricStatus.capacity(fraction: usedFraction)
         ) {
             Sparkline(values: history, maxValue: 1, color: .blue)
-                .frame(height: 42)
+                .frame(height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
             if topApps.isEmpty {

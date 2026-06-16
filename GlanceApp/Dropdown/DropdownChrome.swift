@@ -11,12 +11,12 @@ struct MetricCard<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 10) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(accent)
-                    .frame(width: 26, height: 26)
+                    .frame(width: 30, height: 30)
                     .background(
                         LinearGradient(
                             colors: [accent.opacity(0.14), accent.opacity(0.04)],
@@ -33,13 +33,13 @@ struct MetricCard<Content: View>: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
                         Text(title)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                         if let status {
                             StatusBadge(status: status, accent: accent)
                         }
                     }
                     Text(detail)
-                        .font(.system(size: 10.5))
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -47,14 +47,14 @@ struct MetricCard<Content: View>: View {
                 Spacer(minLength: 8)
 
                 Text(value)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
             }
 
             content
         }
-        .padding(12)
+        .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(.background.opacity(0.2))
