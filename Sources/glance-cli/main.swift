@@ -21,6 +21,9 @@ if let n = s.network {
 if let d = s.disk {
     line("磁碟", "\(Formatters.bytes(d.usedBytes)) / \(Formatters.bytes(d.totalBytes)) (\(Formatters.percent(d.usedFraction)))")
 }
+if let io = s.diskIO {
+    line("磁碟 I/O", "↑寫 \(Formatters.rateCompact(io.writeBytesPerSec)) ↓讀 \(Formatters.rateCompact(io.readBytesPerSec))")
+}
 if let b = s.battery, b.isPresent {
     var extra: [String] = []
     if let c = b.cycleCount { extra.append("循環\(c)") }

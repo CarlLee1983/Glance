@@ -4,6 +4,7 @@ import GlanceCore
 
 struct DiskSection: View {
     let snapshot: DiskSnapshot?
+    let io: DiskIOSnapshot?
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -17,6 +18,22 @@ struct DiskSection: View {
             status: MetricStatus.capacity(fraction: usedFraction)
         ) {
             CustomProgressBar(value: usedFraction, color: .yellow)
+
+            if let io {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("寫 \(Formatters.rateCompact(io.writeBytesPerSec))/s")
+                    Text("·").foregroundStyle(.secondary)
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("讀 \(Formatters.rateCompact(io.readBytesPerSec))/s")
+                    Spacer()
+                }
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            }
 
             Button {
                 openAnalyzerWindow()
