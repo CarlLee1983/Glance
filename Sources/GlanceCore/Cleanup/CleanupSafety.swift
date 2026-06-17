@@ -39,7 +39,8 @@ public enum CleanupSafety {
 
     /// 解析最深「已存在祖先」的符號連結,再接回尚未存在的尾段,回傳正規化後的路徑元件。
     /// 這能在刪除目標本身尚未存在時,仍揭露中間目錄 symlink 造成的真實落點。
-    private static func resolvedComponents(
+    /// 同模組共用:`DiskTrashSafety` 亦以此擋中間 symlink 逃逸。
+    static func resolvedComponents(
         of url: URL,
         fileManager: FileManager
     ) -> [String] {

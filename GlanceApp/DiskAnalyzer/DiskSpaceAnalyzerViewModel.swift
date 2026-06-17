@@ -148,25 +148,26 @@ final class DiskSpaceAnalyzerViewModel: ObservableObject {
     // MARK: - Trash
 
     func moveSelectedToTrash() {
-        let items = selectedItems.map { DiskTrashRequestItem(url: $0.url, sizeBytes: $0.sizeBytes) }
+        // 鎖定派工當下的選取項目:刪除在背景執行,期間使用者可能下鑽/改選取,
+        // 故移除哪些節點必須以這份快照為準,不能在回呼時重讀 live 的 selectedItems。
+        let dispatched = selectedItems
+        let items = dispatched.map { DiskTrashRequestItem(url: $0.url, sizeBytes: $0.sizeBytes) }
         guard !items.isEmpty, navigator != nil else { return }
+        let dispatchedIDs = Set(dispatched.map(\.id))
         let root = rootURL
         let trashService = self.trashService
 
         Task { [weak self] in
             let result = await Task.detached { trashService.run(items: items, withinRoot: root) }.value
-            await self?.applyTrashResult(result)
+            await self?.applyTrashResult(result, dispatchedIDs: dispatchedIDs)
         }
     }
 
-    private func applyTrashResult(_ result: DiskTrashResult) {
+    private func applyTrashResult(_ result: DiskTrashResult, dispatchedIDs: Set<String>) {
         guard var nav = navigator else { return }
-        let trashedIDs = Set(
-            selectedItems
-                .filter { item in !result.skippedPaths.contains { $0.url == item.url } }
-                .map(\.id)
-        )
-        nav.remove(ids: trashedIDs)
+        // DiskNode.id == url.path,故可用被跳過的 url.path 從派工快照中扣除真正被丟掉的項目。
+        let skippedIDs = Set(result.skippedPaths.map(\.url.path))
+        nav.remove(ids: dispatchedIDs.subtracting(skippedIDs))
         navigator = nav
         selection = []
         persistCache(root: nav.root)

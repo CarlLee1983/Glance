@@ -28,7 +28,9 @@ public enum DiskTrashSafety {
         guard rootComponents.count > 1 else { return false }
 
         // 3) 必須是 root 的嚴格子孫(元件數 > root 且前綴相符)。
-        let targetComponents = standardized.resolvingSymlinksInPath().pathComponents
+        //    以「最深已存在祖先」解析符號連結(沿用 CleanupSafety),可擋中間目錄 symlink
+        //    在目標尚未存在時造成的逃逸——本護欄允許任意深度,正是該防的情境。
+        let targetComponents = CleanupSafety.resolvedComponents(of: standardized, fileManager: fileManager)
         guard targetComponents.count > rootComponents.count,
               Array(targetComponents.prefix(rootComponents.count)) == rootComponents else {
             return false
