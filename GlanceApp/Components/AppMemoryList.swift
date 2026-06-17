@@ -10,7 +10,31 @@ struct AppMemoryList: View {
 
     @State private var expanded = false
 
+    @State private var hoveredID: String?
+
+    private let terminator = AppTerminator()
+
     private let collapsedCount = 5
+
+    /// 可結束:有 .app bundle 且不是 Glance 自身。
+    private func eligible(_ app: AppMemoryUsage) -> Bool {
+        guard let url = app.bundleURL else { return false }
+        return url.standardizedFileURL.path != Bundle.main.bundleURL.standardizedFileURL.path
+    }
+
+    /// 輕量確認 → graceful terminate。
+    private func confirmAndTerminate(_ app: AppMemoryUsage) {
+        guard let url = app.bundleURL else { return }
+        let alert = NSAlert()
+        alert.messageText = "確定要結束「\(app.appName)」嗎?"
+        alert.informativeText = "未儲存的資料可能遺失。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "結束")
+        alert.addButton(withTitle: "取消")
+        if alert.runModal() == .alertFirstButtonReturn {
+            terminator.terminateApp(matching: url)
+        }
+    }
 
     var body: some View {
         let visibleCount = expanded ? apps.count : min(collapsedCount, apps.count)
@@ -43,6 +67,7 @@ struct AppMemoryList: View {
 
     private func row(_ app: AppMemoryUsage, isTop: Bool, maxVal: Double) -> some View {
         let ratio = min(max(Double(app.memoryBytes) / maxVal, 0.0), 1.0)
+        let showKill = hoveredID == app.id && eligible(app)
 
         return HStack(spacing: 8) {
             icon(for: app)
@@ -72,6 +97,19 @@ struct AppMemoryList: View {
 
             Spacer()
 
+            if showKill {
+                Button {
+                    confirmAndTerminate(app)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("結束「\(app.appName)」")
+                .transition(.opacity)
+            }
+
             Text(Formatters.bytes(app.memoryBytes))
                 .font(.system(size: isTop ? 12 : 11, weight: isTop ? .semibold : .regular))
                 .monospacedDigit()
@@ -84,6 +122,12 @@ struct AppMemoryList: View {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(accent.opacity(isTop ? 0.14 : 0.07))
                     .frame(width: geo.size.width * CGFloat(ratio))
+            }
+        }
+        .onHover { inside in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                if inside { hoveredID = app.id }
+                else if hoveredID == app.id { hoveredID = nil }
             }
         }
     }
