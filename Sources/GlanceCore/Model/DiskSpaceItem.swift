@@ -1,6 +1,6 @@
 import Foundation
 
-public enum DiskSpaceItemKind: Equatable, Sendable {
+public enum DiskSpaceItemKind: Equatable, Sendable, Codable {
     case file
     case folder
 }
