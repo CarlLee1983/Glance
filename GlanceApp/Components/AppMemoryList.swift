@@ -32,7 +32,20 @@ struct AppMemoryList: View {
         alert.addButton(withTitle: "結束")
         alert.addButton(withTitle: "取消")
         if alert.runModal() == .alertFirstButtonReturn {
-            terminator.terminateApp(matching: url)
+            let count = terminator.terminateApp(matching: url)
+            guard count > 0 else { return }  // 已自行退出(競態)→ 靜默
+            let name = app.appName
+            let term = terminator
+            // 稍候重查:仍在執行多半是被 launchd/系統託管而自動重啟,或正等待儲存對話框。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                guard term.isRunning(matching: url) else { return }
+                let warn = NSAlert()
+                warn.messageText = "「\(name)」可能無法結束"
+                warn.informativeText = "它似乎仍在執行。某些背景程式(例如由系統 / launchd 託管的 agent)會在結束後被自動重新啟動,或它正在等待你回應儲存對話框。"
+                warn.alertStyle = .informational
+                warn.addButton(withTitle: "好")
+                warn.runModal()
+            }
         }
     }
 

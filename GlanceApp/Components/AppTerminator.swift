@@ -30,4 +30,14 @@ struct AppTerminator {
         toTerminate.forEach { terminate($0) }
         return toTerminate.count
     }
+
+    /// target 是否仍有相符(非自身)的 running app。供「結束後仍在執行」回饋判斷用:
+    /// launchd KeepAlive 託管的 agent 被結束後會被自動重啟,會在此回 true。
+    func isRunning(matching target: URL) -> Bool {
+        let refs = runningApps().compactMap { app -> RunningAppRef? in
+            guard let url = app.bundleURL else { return nil }
+            return RunningAppRef(bundleURL: url, isCurrentApp: app == .current)
+        }
+        return !AppTerminationMatcher.matches(target: target, running: refs).isEmpty
+    }
 }
