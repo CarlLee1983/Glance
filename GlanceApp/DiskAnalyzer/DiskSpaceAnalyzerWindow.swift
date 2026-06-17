@@ -4,20 +4,11 @@ import GlanceCore
 
 struct DiskSpaceAnalyzerWindow: View {
     @StateObject private var viewModel = DiskSpaceAnalyzerViewModel()
-    @State private var selectedView: ResultView = .folders
-
-    private enum ResultView: String, CaseIterable, Identifiable {
-        case folders = "Folders"
-        case files = "Files"
-
-        var id: String { rawValue }
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
             summaryStrip
-            resultPicker
             resultList
             footer
         }
@@ -72,34 +63,24 @@ struct DiskSpaceAnalyzerWindow: View {
             summaryTile("Status", viewModel.statusText)
             summaryTile("Scanned", "\(viewModel.scannedCount)")
             summaryTile("Skipped", "\(viewModel.skippedCount)")
-            summaryTile("Visible", "\(currentItems.count)")
+            summaryTile("Items", "\(topLevelItems.count)")
         }
-    }
-
-    private var resultPicker: some View {
-        Picker("Results", selection: $selectedView) {
-            ForEach(ResultView.allCases) { view in
-                Text(view.rawValue).tag(view)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(width: 240)
     }
 
     private var resultList: some View {
-        List(currentItems) { item in
+        List(topLevelItems) { node in
             HStack(spacing: 12) {
-                Image(systemName: item.kind == .folder ? "folder" : "doc")
+                Image(systemName: node.kind == .folder ? "folder" : "doc")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(item.kind == .folder ? .blue : .secondary)
+                    .foregroundStyle(node.kind == .folder ? .blue : .secondary)
                     .frame(width: 18)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(item.name)
+                    Text(node.name)
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)
 
-                    Text(item.url.path)
+                    Text(node.url.path)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -109,11 +90,11 @@ struct DiskSpaceAnalyzerWindow: View {
                 Spacer(minLength: 12)
 
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text(Formatters.bytes(item.sizeBytes))
+                    Text(Formatters.bytes(node.sizeBytes))
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .monospacedDigit()
 
-                    Text(modifiedDateText(for: item))
+                    Text(modifiedDateText(for: node))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -121,7 +102,7 @@ struct DiskSpaceAnalyzerWindow: View {
                 .frame(width: 112, alignment: .trailing)
 
                 Button {
-                    reveal(item.url)
+                    reveal(node.url)
                 } label: {
                     Label("Reveal", systemImage: "magnifyingglass")
                 }
@@ -130,7 +111,7 @@ struct DiskSpaceAnalyzerWindow: View {
             .padding(.vertical, 4)
         }
         .overlay {
-            if currentItems.isEmpty {
+            if topLevelItems.isEmpty {
                 Text(viewModel.isScanning ? "Scanning..." : "No results")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -172,16 +153,16 @@ struct DiskSpaceAnalyzerWindow: View {
         if let currentPath = viewModel.currentPath, viewModel.isScanning {
             return currentPath
         }
-
         return viewModel.statusText
     }
 
-    private var currentItems: [DiskSpaceItem] {
-        selectedView == .folders ? viewModel.largestFolders : viewModel.largestFiles
+    /// Top-level children of the root node, sorted by size descending.
+    private var topLevelItems: [DiskNode] {
+        viewModel.rootNode?.children ?? []
     }
 
-    private func modifiedDateText(for item: DiskSpaceItem) -> String {
-        guard let modifiedAt = item.modifiedAt else { return "Modified --" }
+    private func modifiedDateText(for node: DiskNode) -> String {
+        guard let modifiedAt = node.modifiedAt else { return "Modified --" }
         return modifiedAt.formatted(date: .abbreviated, time: .omitted)
     }
 
