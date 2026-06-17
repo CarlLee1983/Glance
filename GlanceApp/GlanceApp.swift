@@ -13,7 +13,7 @@ struct GlanceApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Disk Space Analyzer", id: "disk-space-analyzer") {
+        Window("磁碟空間分析", id: "disk-space-analyzer") {
             DiskSpaceAnalyzerWindow()
         }
 
