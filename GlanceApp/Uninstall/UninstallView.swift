@@ -81,9 +81,7 @@ struct UninstallView: View {
                     viewModel.select(app)
                 } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: "app.dashed")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.secondary)
+                        AppIconView(bundleURL: app.bundleURL, size: 24)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(app.name)
                                 .font(.system(size: 13, weight: .medium))
@@ -111,14 +109,15 @@ struct UninstallView: View {
     private var previewView: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let plan = viewModel.plan {
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    AppIconView(bundleURL: plan.app.bundleURL, size: 36)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(plan.app.name).font(.system(size: 15, weight: .semibold))
                         Text(plan.app.bundleID)
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(Formatters.bytes(plan.totalBytes))
+                    Text(Formatters.bytes(viewModel.selectedTotalBytes))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .monospacedDigit()
                 }
@@ -131,22 +130,41 @@ struct UninstallView: View {
 
                 List {
                     Section("本體") {
-                        row(path: plan.app.bundleURL.path, bytes: plan.app.sizeBytes)
+                        HStack(spacing: 10) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.secondary)
+                            row(path: plan.app.bundleURL.path, bytes: plan.app.sizeBytes)
+                        }
                     }
                     Section("關聯檔(\(plan.relatedFiles.count))") {
                         if plan.relatedFiles.isEmpty {
                             Text("無").font(.system(size: 12)).foregroundStyle(.secondary)
                         } else {
                             ForEach(plan.relatedFiles) { file in
-                                row(path: file.url.path, bytes: file.sizeBytes)
+                                let fileSelected = viewModel.selectedRelatedFiles.contains(file)
+                                Button {
+                                    viewModel.toggleRelatedFile(file)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: fileSelected ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(fileSelected ? .blue : .secondary)
+                                        row(path: file.url.path, bytes: file.sizeBytes)
+                                    }
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
                 }
 
-                HStack {
+                HStack(alignment: .center) {
                     Button("返回") { viewModel.backToList() }
                     Spacer()
+                    Text("已選 \(viewModel.selectedRelatedFiles.count)/\(plan.relatedFiles.count) 項 · 合計 \(Formatters.bytes(viewModel.selectedTotalBytes))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                     Button("移到垃圾桶…") { viewModel.requestConfirmation() }
                         .buttonStyle(.borderedProminent)
                         .disabled(!viewModel.canUninstall)
@@ -184,7 +202,7 @@ struct UninstallView: View {
                 .font(.system(size: 16, weight: .semibold))
 
             if let plan = viewModel.plan {
-                Text("將把「\(plan.app.name)」本體與關聯 \(plan.relatedFiles.count) 件(合計約 \(Formatters.bytes(plan.totalBytes)))移到垃圾桶。可從垃圾桶復原。")
+                Text("將把「\(plan.app.name)」本體與選取的 \(viewModel.selectedRelatedFiles.count) 件關聯檔 (合計約 \(Formatters.bytes(viewModel.selectedTotalBytes))) 移到垃圾桶。可從垃圾桶復原。")
                     .font(.system(size: 13))
                     .fixedSize(horizontal: false, vertical: true)
             }
