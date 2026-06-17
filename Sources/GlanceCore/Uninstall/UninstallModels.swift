@@ -18,7 +18,7 @@ public struct InstalledApp: Equatable, Sendable, Identifiable {
 }
 
 /// 一個與 App 關聯的散落檔/目錄。
-public struct RelatedFile: Equatable, Sendable, Identifiable {
+public struct RelatedFile: Hashable, Equatable, Sendable, Identifiable {
     public let url: URL
     public let sizeBytes: UInt64
 

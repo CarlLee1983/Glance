@@ -22,6 +22,7 @@ final class UninstallViewModel: ObservableObject {
     @Published private(set) var selectedAppRunning = false
     @Published private(set) var currentPath: String?
     @Published private(set) var runResult: UninstallRunResult?
+    @Published var selectedRelatedFiles: Set<RelatedFile> = []
 
     private let discovery: AppDiscovery
     private let finder: RelatedFileFinder
@@ -66,6 +67,16 @@ final class UninstallViewModel: ObservableObject {
 
     var canUninstall: Bool { phase == .preview && !selectedAppRunning }
 
+    var selectedTotalBytes: UInt64 {
+        guard let plan = plan else { return 0 }
+        return plan.app.sizeBytes + selectedRelatedFiles.reduce(0) { $0 + $1.sizeBytes }
+    }
+
+    var selectedItemCount: Int {
+        guard plan != nil else { return 0 }
+        return 1 + selectedRelatedFiles.count
+    }
+
     // MARK: Actions
 
     func load() {
@@ -101,6 +112,7 @@ final class UninstallViewModel: ObservableObject {
         runTask?.cancel()
         generation += 1
         plan = nil
+        selectedRelatedFiles = []
         runResult = nil
         currentPath = nil
         selectedAppRunning = false
@@ -117,6 +129,14 @@ final class UninstallViewModel: ObservableObject {
         phase = .preview
     }
 
+    func toggleRelatedFile(_ file: RelatedFile) {
+        if selectedRelatedFiles.contains(file) {
+            selectedRelatedFiles.remove(file)
+        } else {
+            selectedRelatedFiles.insert(file)
+        }
+    }
+
     func confirmUninstall() {
         guard phase == .confirming, let plan else { return }
         // App 可能在預覽後才被啟動;移到垃圾桶前重新確認,執行中則退回預覽顯示警告。
@@ -130,8 +150,10 @@ final class UninstallViewModel: ObservableObject {
         let generation = generation
         phase = .running
         currentPath = nil
+        // Build plan containing only selected related files
+        let filteredPlan = UninstallPlan(app: plan.app, relatedFiles: Array(selectedRelatedFiles))
         runTask = Task { [weak self, uninstaller] in
-            let result = await uninstaller.run(plan: plan) { [weak self] progress in
+            let result = await uninstaller.run(plan: filteredPlan) { [weak self] progress in
                 await self?.applyRunProgress(progress, generation: generation)
             }
             await self?.applyRunResult(result, generation: generation)
@@ -150,6 +172,7 @@ final class UninstallViewModel: ObservableObject {
     private func applyPlan(_ plan: UninstallPlan, running: Bool, generation: Int) {
         guard generation == self.generation else { return }
         self.plan = plan
+        self.selectedRelatedFiles = Set(plan.relatedFiles)
         selectedAppRunning = running
         phase = .preview
         buildTask = nil
