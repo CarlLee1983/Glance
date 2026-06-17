@@ -29,6 +29,41 @@ final class DiskScanCacheTests: XCTestCase {
 
         XCTAssertEqual(loaded.root, root)
         XCTAssertEqual(loaded.scannedAt, when)
+        XCTAssertEqual(loaded.retainedDepth, 2)
+    }
+
+    func testLoadRejectsLegacyEntryWithoutRetainedDepth() throws {
+        let cache = DiskScanCache(directory: directory)
+        let rootURL = URL(fileURLWithPath: "/r")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let legacyJSON = """
+        {
+          "rootPath": "/r",
+          "scannedAt": 1700,
+          "root": {
+            "url": "file:///r",
+            "name": "r",
+            "kind": "folder",
+            "sizeBytes": 0,
+            "modifiedAt": null,
+            "children": [],
+            "isAggregate": false,
+            "aggregateCount": 0
+          }
+        }
+        """
+        try legacyJSON.data(using: .utf8)!.write(to: cache.fileURLForTesting(rootURL: rootURL))
+
+        XCTAssertNil(cache.load(rootURL: rootURL))
+    }
+
+    func testLoadIgnoresLegacyUnversionedCacheFile() throws {
+        let cache = DiskScanCache(directory: directory)
+        let rootURL = URL(fileURLWithPath: "/r")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data(repeating: 0x7A, count: 1024).write(to: cache.legacyFileURLForTesting(rootURL: rootURL))
+
+        XCTAssertNil(cache.load(rootURL: rootURL))
     }
 
     func testLoadMissingReturnsNil() {

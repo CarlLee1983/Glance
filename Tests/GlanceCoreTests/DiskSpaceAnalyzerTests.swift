@@ -41,6 +41,25 @@ final class DiskSpaceAnalyzerTests: XCTestCase {
         XCTAssertEqual(childNode.sizeBytes, 25)
     }
 
+    func testDefaultScanPrunesDeepChildrenButKeepsFolderSizes() async throws {
+        let root = try makeTemporaryRoot()
+        let level1 = root.appendingPathComponent("level1", isDirectory: true)
+        let level2 = level1.appendingPathComponent("level2", isDirectory: true)
+        let level3 = level2.appendingPathComponent("level3", isDirectory: true)
+        try FileManager.default.createDirectory(at: level3, withIntermediateDirectories: true)
+        try writeFile(level3.appendingPathComponent("deep.dat"), byteCount: 64)
+
+        let scanResult = await DiskSpaceAnalyzer().scanTree(rootURL: root)
+        let rootNode = try XCTUnwrap(scanResult.root)
+        let level1Node = try XCTUnwrap(child(named: "level1", in: rootNode))
+        let level2Node = try XCTUnwrap(child(named: "level2", in: level1Node))
+
+        XCTAssertEqual(rootNode.sizeBytes, 64)
+        XCTAssertEqual(level1Node.sizeBytes, 64)
+        XCTAssertEqual(level2Node.sizeBytes, 64)
+        XCTAssertTrue(level2Node.children.isEmpty)
+    }
+
     func testIncludesHiddenDirectories() async throws {
         let root = try makeTemporaryRoot()
         let hidden = root.appendingPathComponent(".cache", isDirectory: true)
