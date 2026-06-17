@@ -69,36 +69,60 @@ struct CleanupView: View {
     // MARK: Selection
 
     private var selectionView: some View {
-        VStack(spacing: 12) {
-            List(viewModel.rows) { row in
-                Button {
-                    viewModel.toggle(row.id)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: row.isSelected ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 16))
-                            .foregroundStyle(row.isSelected ? .blue : .secondary)
+        VStack(spacing: 14) {
+            ScrollView {
+                VStack(spacing: 10) {
+                    ForEach(viewModel.rows) { row in
+                        Button {
+                            viewModel.toggle(row.id)
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: row.isSelected ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(row.isSelected ? .blue : .secondary)
 
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(row.category.displayName)
-                                .font(.system(size: 13, weight: .medium))
-                            Text(pathSummary(row.category))
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+                                let (iconName, iconColor) = getCategoryIcon(row.category.id)
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(iconColor.opacity(0.12))
+                                        .frame(width: 36, height: 36)
+                                    Image(systemName: iconName)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(iconColor)
+                                }
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(row.category.displayName)
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Text(pathSummary(row.category))
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+
+                                Spacer(minLength: 12)
+
+                                Text(Formatters.bytes(row.result.reclaimableBytes))
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundStyle(row.result.reclaimableBytes > 0 ? .primary : .secondary)
+                            }
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color(nsColor: .windowBackgroundColor))
+                                    .shadow(color: Color.black.opacity(0.03), radius: 2, x: 0, y: 1)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(row.isSelected ? Color.blue.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1.5)
+                            )
                         }
-
-                        Spacer(minLength: 12)
-
-                        Text(Formatters.bytes(row.result.reclaimableBytes))
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
+                        .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 4)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
 
             HStack {
@@ -114,6 +138,17 @@ struct CleanupView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!viewModel.hasSelection)
             }
+        }
+    }
+
+    private func getCategoryIcon(_ id: CleanupCategoryID) -> (String, Color) {
+        switch id {
+        case .trash:
+            return ("trash", .red)
+        case .userCaches:
+            return ("folder.badge.gearshape", .blue)
+        case .devCaches:
+            return ("terminal", .green)
         }
     }
 
@@ -184,11 +219,25 @@ struct CleanupView: View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color.green.opacity(0.18), lineWidth: 10)
+                    .stroke(Color.green.opacity(0.08), lineWidth: 10)
                     .frame(width: 120, height: 120)
+
+                Circle()
+                    .trim(from: 0.0, to: 1.0)
+                    .stroke(
+                        AngularGradient(
+                            colors: [.green, .green.opacity(0.7), .green],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 120, height: 120)
+                    .shadow(color: Color.green.opacity(0.3), radius: 4, x: 0, y: 2)
+
                 VStack(spacing: 2) {
                     Text(Formatters.bytes(viewModel.runResult?.totalReclaimedBytes ?? 0))
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
                         .monospacedDigit()
                     Text("已回收")
                         .font(.system(size: 11))
@@ -196,7 +245,7 @@ struct CleanupView: View {
                 }
             }
 
-            Text("刪除 \(viewModel.runResult?.totalDeletedCount ?? 0) 項 · 跳過 \(viewModel.runResult?.skippedCount ?? 0) 項(無權限)")
+            Text("刪除 \(viewModel.runResult?.totalDeletedCount ?? 0) 項 · 跳過 \(viewModel.runResult?.skippedCount ?? 0) 項 (無權限)")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
