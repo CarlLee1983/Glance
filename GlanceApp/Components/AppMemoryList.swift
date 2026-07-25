@@ -16,10 +16,13 @@ struct AppMemoryList: View {
 
     private let collapsedCount = 5
 
-    /// 可結束:有 .app bundle 且不是 Glance 自身。
+    /// 可結束:有 .app bundle、不是 Glance 自身,且此 bundle 確實登記在 running apps 裡
+    /// (與實際結束用的同一套 matcher)。巢狀 helper(如 Chrome Renderer)不在其中,
+    /// 因此不會長出一顆按了沒反應的結束鈕。
     private func eligible(_ app: AppMemoryUsage) -> Bool {
         guard let url = app.bundleURL else { return false }
-        return url.standardizedFileURL.path != Bundle.main.bundleURL.standardizedFileURL.path
+        guard url.standardizedFileURL.path != Bundle.main.bundleURL.standardizedFileURL.path else { return false }
+        return terminator.isRunning(matching: url)
     }
 
     /// 輕量確認 → graceful terminate。
@@ -101,11 +104,11 @@ struct AppMemoryList: View {
                             .background(accent.opacity(0.18), in: Capsule())
                     }
                 }
-                if app.processCount > 1 {
-                    Text("\(app.processCount) 個行程")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                }
+                Text(sourceSubtitle(for: app))
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
             }
 
             Spacer()
@@ -150,5 +153,42 @@ struct AppMemoryList: View {
             return Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
         }
         return Image(systemName: "app.dashed")
+    }
+
+    private func sourceSubtitle(for app: AppMemoryUsage) -> String {
+        var parts = [kindLabel(for: app.kind)]
+        if app.processCount > 1 {
+            parts.append("\(app.processCount) 個行程")
+        } else if let pid = app.soloPID {
+            parts.append("pid \(pid)")
+        }
+
+        if let source = sourcePath(for: app) {
+            parts.append(source)
+        }
+
+        return parts.joined(separator: " · ")
+    }
+
+    private func kindLabel(for kind: AppMemoryUsage.Kind) -> String {
+        switch kind {
+        case .app:
+            return "App"
+        case .appChild:
+            return "App 子行程"
+        case .systemService:
+            return "系統服務"
+        case .userProcess:
+            return "背景程式"
+        case .unknown:
+            return "未知來源"
+        }
+    }
+
+    private func sourcePath(for app: AppMemoryUsage) -> String? {
+        if let bundleURL = app.bundleURL {
+            return bundleURL.path
+        }
+        return app.executablePath
     }
 }

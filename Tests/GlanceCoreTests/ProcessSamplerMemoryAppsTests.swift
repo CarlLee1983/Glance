@@ -8,8 +8,9 @@ private final class StubMemSource: RawProcessSource {
 }
 
 final class ProcessSamplerMemoryAppsTests: XCTestCase {
-    func testNonAppProcessesAreNotMergedTogether() {
-        // 多個同名(node)但非 .app 的 CLI 行程不應被加總成一個;各自獨立呈現。
+    func testNonAppProcessesWithSamePathAreAggregated() {
+        // 同一執行檔路徑的多個非 .app 行程,聚合成一列(比照 .app 的彙總規則),
+        // 記憶體加總、processCount 反映實際行程數,並以路徑為群組鍵。
         let procs = [
             RawProcess(pid: 100, name: "node", cpuTimeSeconds: 0, memoryBytes: 1_300, executablePath: "/usr/local/bin/node"),
             RawProcess(pid: 101, name: "node", cpuTimeSeconds: 0, memoryBytes: 170, executablePath: "/usr/local/bin/node"),
@@ -18,13 +19,32 @@ final class ProcessSamplerMemoryAppsTests: XCTestCase {
         let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
         let apps = sampler.sample().topMemoryApps
 
-        XCTAssertEqual(apps.count, 3)
-        XCTAssertEqual(apps.map(\.memoryBytes), [1_300, 170, 40])
-        XCTAssertTrue(apps.allSatisfy { $0.appName == "node" })
+        XCTAssertEqual(apps.count, 1)
+        let node = apps[0]
+        XCTAssertEqual(node.appName, "node")
+        XCTAssertEqual(node.memoryBytes, 1_510)
+        XCTAssertEqual(node.processCount, 3)
+        XCTAssertNil(node.bundleURL)
+        XCTAssertEqual(node.kind, .userProcess)
+        XCTAssertEqual(node.executablePath, "/usr/local/bin/node")
+        XCTAssertEqual(node.id, "/usr/local/bin/node")
+        // 多行程群組沒有單一 pid 可指認
+        XCTAssertNil(node.soloPID)
+    }
+
+    func testNonAppProcessesWithDifferentPathsStaySeparate() {
+        // 不同執行檔路徑不可被誤加總,即使同名。
+        let procs = [
+            RawProcess(pid: 1, name: "node", cpuTimeSeconds: 0, memoryBytes: 500, executablePath: "/usr/local/bin/node"),
+            RawProcess(pid: 2, name: "node", cpuTimeSeconds: 0, memoryBytes: 400, executablePath: "/opt/homebrew/bin/node"),
+        ]
+        let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
+        let apps = sampler.sample().topMemoryApps
+        XCTAssertEqual(apps.count, 2)
+        XCTAssertEqual(Set(apps.map(\.id)).count, 2)
         XCTAssertTrue(apps.allSatisfy { $0.processCount == 1 })
-        XCTAssertTrue(apps.allSatisfy { $0.bundleURL == nil })
-        // id 必須各自唯一,才不會被歸成同一筆
-        XCTAssertEqual(Set(apps.map(\.id)).count, 3)
+        // 單行程群組保留可指認的 pid
+        XCTAssertEqual(apps.first { $0.executablePath == "/usr/local/bin/node" }?.soloPID, 1)
     }
 
     func testSumsHelperProcessesUnderSameApp() {
@@ -39,24 +59,44 @@ final class ProcessSamplerMemoryAppsTests: XCTestCase {
         let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
         let apps = sampler.sample().topMemoryApps
 
-        let chromeBundle = apps.first { $0.appName == "Google Chrome Helper" }
-        XCTAssertEqual(chromeBundle?.memoryBytes, 5_000)
-        XCTAssertEqual(chromeBundle?.processCount, 2)
+        // 巢狀 .app(helper)歸為 App 子行程,而非可獨立結束的 App。
+        let helper = apps.first { $0.appName == "Google Chrome Helper" }
+        XCTAssertEqual(helper?.memoryBytes, 5_000)
+        XCTAssertEqual(helper?.processCount, 2)
+        XCTAssertEqual(helper?.kind, .appChild)
+        XCTAssertNil(helper?.soloPID)
+
+        // 頂層 .app 單一行程 → 是 App,且保留可指認 pid。
+        let xcode = apps.first { $0.appName == "Xcode" }
+        XCTAssertEqual(xcode?.kind, .app)
+        XCTAssertEqual(xcode?.soloPID, 4)
 
         XCTAssertEqual(apps.first?.appName, "Google Chrome Helper")
         XCTAssertEqual(apps.first?.memoryBytes, 5_000)
     }
 
-    func testFallsBackToProcessNameWhenNoAppPath() {
+    func testClassifiesSystemServiceUserProcessAndUnknown() {
         let procs = [
             RawProcess(pid: 10, name: "cfprefsd", cpuTimeSeconds: 0, memoryBytes: 500, executablePath: "/usr/sbin/cfprefsd"),
             RawProcess(pid: 11, name: "launchd", cpuTimeSeconds: 0, memoryBytes: 700, executablePath: nil),
+            RawProcess(pid: 12, name: "ovpnagent", cpuTimeSeconds: 0, memoryBytes: 600, executablePath: "/Library/Frameworks/OpenVPNConnect.framework/Versions/Current/usr/sbin/ovpnagent"),
         ]
         let sampler = ProcessSampler(source: StubMemSource(procs), clock: { 0 }, limit: 5)
         let apps = sampler.sample().topMemoryApps
-        XCTAssertEqual(apps.first?.appName, "launchd")
-        XCTAssertNil(apps.first?.bundleURL)
-        XCTAssertEqual(apps.count, 2)
+
+        let launchd = apps.first { $0.appName == "launchd" }
+        XCTAssertEqual(launchd?.kind, .unknown)
+        XCTAssertEqual(launchd?.soloPID, 11)
+        XCTAssertNil(launchd?.executablePath)
+
+        let service = apps.first { $0.appName == "cfprefsd" }
+        XCTAssertEqual(service?.kind, .systemService)
+        XCTAssertEqual(service?.soloPID, 10)
+        XCTAssertEqual(service?.executablePath, "/usr/sbin/cfprefsd")
+
+        // 第三方 framework 內的 daemon 不在 Apple 系統目錄 → 使用者背景程式(非「命令列」)。
+        let ovpn = apps.first { $0.appName == "ovpnagent" }
+        XCTAssertEqual(ovpn?.kind, .userProcess)
     }
 
     func testRespectsLimit() {
